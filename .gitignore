@@ -2,3 +2,25 @@
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# SQLite data directory
+data/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
