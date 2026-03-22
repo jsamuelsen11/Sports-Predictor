@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "Sports_Predictor",
+  "project_id": "c163ce8d-9c3d-40c0-a120-151e0c6d7ee5"
+}
