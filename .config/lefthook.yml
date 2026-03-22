@@ -1,0 +1,95 @@
+# lefthook.yml — Git hook pipeline
+# https://github.com/evilmartians/lefthook
+#
+# Pipeline: format (auto-fix) → lint (check) → security (scan)
+# Install: lefthook install
+
+pre-commit:
+  jobs:
+    # === Job 1: Format ===
+    # Auto-fix formatting issues before linting sees the code
+    - name: format
+      group:
+        parallel: true
+        jobs:
+          - name: spotless
+            glob: "*.{java,kt,kts}"
+            run: ./gradlew spotlessApply --daemon
+            stage_fixed: true
+
+          - name: taplo
+            glob: "*.toml"
+            run: taplo fmt --config .config/taplo.toml {staged_files}
+            stage_fixed: true
+
+          - name: prettier
+            glob: "*.{yaml,yml,md,html,json}"
+            run: prettier --config .config/prettierrc.json --list-different --write {staged_files}
+            stage_fixed: true
+
+          - name: shfmt
+            glob: "*.{sh,bash}"
+            run: shfmt -w {staged_files}
+            stage_fixed: true
+
+    # === Job 2: Lint ===
+    # Check formatted code for issues
+    - name: lint
+      exclude:
+        - .beads/**
+        - .beads-hooks/**
+        - .claude/**
+      group:
+        parallel: true
+        jobs:
+          - name: checkstyle
+            glob: "*.java"
+            run: ./gradlew checkstyleMain --daemon
+            fail_text: "checkstyle found issues — fix them before committing"
+
+          - name: spotbugs
+            glob: "*.java"
+            run: ./gradlew spotbugsMain --daemon
+            fail_text: "spotbugs found issues — fix them before committing"
+
+          - name: yamllint
+            glob: "*.{yml,yaml}"
+            run: yamllint -c .config/yamllint.yaml {staged_files}
+
+          - name: markdownlint
+            glob: "*.md"
+            run: markdownlint-cli2 --config .config/markdownlint.json {staged_files}
+
+          - name: shellcheck
+            glob: "*.{sh,bash}"
+            run: shellcheck {staged_files}
+
+          - name: actionlint
+            glob: ".github/workflows/*.{yaml,yml}"
+            run: actionlint {staged_files}
+
+          - name: taplo-lint
+            glob: "*.toml"
+            run: taplo lint --config .config/taplo.toml {staged_files}
+
+    # === Job 3: Security ===
+    # Scan for secrets and credentials
+    - name: security
+      group:
+        parallel: true
+        jobs:
+          - name: gitleaks
+            run: gitleaks protect --staged --no-banner
+
+pre-push:
+  parallel: true
+  commands:
+    unit-tests:
+      run: ./gradlew test --daemon
+    lint:
+      run: ./gradlew check --daemon
+
+commit-msg:
+  commands:
+    gitfluff:
+      run: gitfluff lint {1}

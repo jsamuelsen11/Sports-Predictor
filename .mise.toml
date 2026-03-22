@@ -1,0 +1,72 @@
+[tools]
+java = "temurin-25"
+gradle = "9"
+lefthook = "latest"
+"pipx:gitfluff" = "latest"
+actionlint = "latest"
+taplo = "latest"
+shellcheck = "latest"
+markdownlint-cli2 = "latest"
+yamllint = "latest"
+gitleaks = "latest"
+shfmt = "latest"
+prettier = "latest"
+
+[env]
+LEFTHOOK_FILE_NAME = ".config/lefthook.yml"
+
+[tasks.build]
+description = "Full build with tests"
+run = "./gradlew build"
+
+[tasks.test]
+description = "Run all tests"
+run = "./gradlew test"
+
+[tasks."test:unit"]
+description = "Unit tests only"
+run = "./gradlew test --tests '*Unit*'"
+
+[tasks."test:integration"]
+description = "Integration tests only"
+run = "./gradlew test --tests '*Integration*'"
+
+[tasks.format]
+description = "Auto-format code"
+run = "./gradlew spotlessApply"
+
+[tasks."format:check"]
+description = "Check formatting (no changes)"
+run = "./gradlew spotlessCheck"
+
+[tasks.lint]
+description = "Run linters"
+run = "./gradlew checkstyleMain spotbugsMain"
+
+[tasks.coverage]
+description = "Generate coverage report"
+run = "./gradlew jacocoTestReport"
+
+[tasks.run]
+description = "Start MCP server (WebMVC mode)"
+run = "./gradlew bootRun"
+
+[tasks."run:stdio"]
+description = "Start in STDIO mode"
+run = "./gradlew bootRun --args='--spring.ai.mcp.server.stdio=true'"
+
+[tasks."db:migrate"]
+description = "Run database migrations"
+run = "./gradlew flywayMigrate"
+
+[tasks."db:clean"]
+description = "Reset database"
+run = "./gradlew flywayClean"
+
+[tasks.clean]
+description = "Clean build artifacts"
+run = "./gradlew clean"
+
+[tasks.check]
+description = "Full quality gate"
+depends = ["format:check", "lint", "test", "coverage"]

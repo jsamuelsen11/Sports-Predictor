@@ -24,3 +24,36 @@ data/
 # OS
 .DS_Store
 Thumbs.db
+
+# lefthook
+.lefthook-local.yml
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# SQLite journal/WAL files
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Spring Boot
+HELP.md
+
+# Java
+*.class
+*.jar
+*.war
+hs_err_pid*
+replay_pid*
+
+# Kotlin build cache
+.kotlin/
+
+# Logs
+*.log
+logs/
+
+# mise local overrides
+.mise.local.toml
