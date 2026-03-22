@@ -1,16 +1,16 @@
 [tools]
-java = "temurin-25"
-gradle = "9"
-lefthook = "latest"
-"pipx:gitfluff" = "latest"
 actionlint = "latest"
-taplo = "latest"
-shellcheck = "latest"
-markdownlint-cli2 = "latest"
-yamllint = "latest"
 gitleaks = "latest"
-shfmt = "latest"
+gradle = "9"
+java = "temurin-25"
+lefthook = "latest"
+markdownlint-cli2 = "latest"
+"pipx:gitfluff" = "latest"
 prettier = "latest"
+shellcheck = "latest"
+shfmt = "latest"
+taplo = "latest"
+yamllint = "latest"
 
 [env]
 LEFTHOOK_FILE_NAME = ".config/lefthook.yml"
@@ -68,5 +68,5 @@ description = "Clean build artifacts"
 run = "./gradlew clean"
 
 [tasks.check]
-description = "Full quality gate"
 depends = ["format:check", "lint", "test", "coverage"]
+description = "Full quality gate"

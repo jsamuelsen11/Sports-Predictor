@@ -12,10 +12,11 @@ pre-commit:
       group:
         parallel: true
         jobs:
-          - name: spotless
-            glob: "*.{java,kt,kts}"
-            run: ./gradlew spotlessApply --daemon
-            stage_fixed: true
+          # TODO: enable after Spotless Gradle plugin is configured
+          # - name: spotless
+          #   glob: "*.{java,kt,kts}"
+          #   run: ./gradlew spotlessApply --daemon
+          #   stage_fixed: true
 
           - name: taplo
             glob: "*.toml"
@@ -42,15 +43,17 @@ pre-commit:
       group:
         parallel: true
         jobs:
-          - name: checkstyle
-            glob: "*.java"
-            run: ./gradlew checkstyleMain --daemon
-            fail_text: "checkstyle found issues — fix them before committing"
+          # TODO: enable after Checkstyle Gradle plugin is configured
+          # - name: checkstyle
+          #   glob: "*.java"
+          #   run: ./gradlew checkstyleMain --daemon
+          #   fail_text: "checkstyle found issues — fix them before committing"
 
-          - name: spotbugs
-            glob: "*.java"
-            run: ./gradlew spotbugsMain --daemon
-            fail_text: "spotbugs found issues — fix them before committing"
+          # TODO: enable after SpotBugs Gradle plugin is configured
+          # - name: spotbugs
+          #   glob: "*.java"
+          #   run: ./gradlew spotbugsMain --daemon
+          #   fail_text: "spotbugs found issues — fix them before committing"
 
           - name: yamllint
             glob: "*.{yml,yaml}"
@@ -58,7 +61,8 @@ pre-commit:
 
           - name: markdownlint
             glob: "*.md"
-            run: markdownlint-cli2 --config .config/markdownlint.json {staged_files}
+            run: markdownlint-cli2 --fix --config .config/.markdownlint-cli2.jsonc {staged_files}
+            stage_fixed: true
 
           - name: shellcheck
             glob: "*.{sh,bash}"
