@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: sports-predictor
+  ai:
+    mcp:
+      server:
+        name: sports-predictor
+        version: 1.0.0
+        type: SYNC
+        instructions: >-
+          Sports prediction MCP server providing odds, stats, analysis,
+          predictions, and emulated betting
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
+        sse-message-endpoint: /mcp/messages
+        stdio: true
