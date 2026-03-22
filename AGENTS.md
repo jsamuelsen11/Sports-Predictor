@@ -143,6 +143,7 @@ For more details, see README.md and docs/QUICKSTART.md.
    bd dolt push
    git push
    git status  # MUST show "up to date with origin"
+
    ```
 
 5. **Clean up** - Clear stashes, prune remote branches
