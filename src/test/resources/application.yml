@@ -9,3 +9,9 @@ spring:
     show-sql: false
   flyway:
     enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.sportspredictor: INFO
+    org.springframework.ai: WARN

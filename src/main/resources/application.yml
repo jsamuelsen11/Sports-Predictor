@@ -31,3 +31,9 @@ spring:
           completion: true
         sse-message-endpoint: /mcp/messages
         stdio: true
+
+logging:
+  level:
+    root: INFO
+    com.sportspredictor: INFO
+    org.springframework.ai: INFO
