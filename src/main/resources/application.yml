@@ -4,6 +4,17 @@ server:
 spring:
   application:
     name: sports-predictor
+  datasource:
+    url: jdbc:sqlite:data/sports-predictor.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
   ai:
     mcp:
       server:
