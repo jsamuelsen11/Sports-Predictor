@@ -2,6 +2,7 @@ package com.sportspredictor.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
@@ -36,23 +37,25 @@ class BankrollTest {
     class Builder {
 
         @Test
-        void buildsWithAllFields() {
-            Instant now = Instant.now();
+        void preservesAllFieldsExactly() {
+            Instant createdAt = Instant.parse("2026-01-15T10:00:00Z");
+            Instant archivedAt = Instant.parse("2026-03-01T18:30:00Z");
+
             Bankroll bankroll = Bankroll.builder()
                     .id("abc-123")
                     .name("Season 2026")
-                    .startingBalance(1000.0)
-                    .currentBalance(950.0)
-                    .createdAt(now)
-                    .archivedAt(null)
+                    .startingBalance(new BigDecimal("1000.00"))
+                    .currentBalance(new BigDecimal("950.50"))
+                    .createdAt(createdAt)
+                    .archivedAt(archivedAt)
                     .build();
 
             assertThat(bankroll.getId()).isEqualTo("abc-123");
             assertThat(bankroll.getName()).isEqualTo("Season 2026");
-            assertThat(bankroll.getStartingBalance()).isEqualTo(1000.0);
-            assertThat(bankroll.getCurrentBalance()).isEqualTo(950.0);
-            assertThat(bankroll.getCreatedAt()).isEqualTo(now);
-            assertThat(bankroll.getArchivedAt()).isNull();
+            assertThat(bankroll.getStartingBalance()).isEqualByComparingTo(new BigDecimal("1000.00"));
+            assertThat(bankroll.getCurrentBalance()).isEqualByComparingTo(new BigDecimal("950.50"));
+            assertThat(bankroll.getCreatedAt()).isEqualTo(createdAt);
+            assertThat(bankroll.getArchivedAt()).isEqualTo(archivedAt);
         }
     }
 }

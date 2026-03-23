@@ -3,6 +3,7 @@ package com.sportspredictor.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sportspredictor.entity.enums.BetLegStatus;
+import java.math.BigDecimal;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,17 +37,18 @@ class BetLegTest {
     class Builder {
 
         @Test
-        void buildsWithAllFields() {
+        void preservesAllFieldsExactly() {
             BetLeg leg = BetLeg.builder()
                     .id("leg-1")
                     .legNumber(1)
                     .selection("Chiefs -3.5")
-                    .odds(-110.0)
+                    .odds(new BigDecimal("-110"))
                     .status(BetLegStatus.PENDING)
                     .eventId("evt-123")
                     .sport("NFL")
                     .build();
 
+            assertThat(leg.getOdds()).isEqualByComparingTo(new BigDecimal("-110"));
             assertThat(leg.getStatus()).isEqualTo(BetLegStatus.PENDING);
             assertThat(leg.getResultDetail()).isNull();
         }

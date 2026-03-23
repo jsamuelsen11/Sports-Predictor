@@ -2,31 +2,24 @@ package com.sportspredictor.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 /** A point-in-time snapshot of odds from a specific bookmaker for an event and market. */
 @Entity
 @Table(name = "odds_snapshot")
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class OddsSnapshot {
-
-    @Id
-    @Column(nullable = false, updatable = false)
-    private String id;
+public class OddsSnapshot extends BaseEntity {
 
     @Column(name = "event_id", nullable = false)
     private String eventId;
@@ -45,11 +38,4 @@ public class OddsSnapshot {
 
     @Column(name = "captured_at", nullable = false, updatable = false, columnDefinition = "TEXT")
     private Instant capturedAt;
-
-    @PrePersist
-    void generateId() {
-        if (id == null) {
-            id = UUID.randomUUID().toString();
-        }
-    }
 }

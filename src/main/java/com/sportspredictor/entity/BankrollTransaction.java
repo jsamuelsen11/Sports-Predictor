@@ -6,33 +6,27 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 /** A ledger entry recording a deposit, withdrawal, or bet-related balance change. */
 @Entity
 @Table(name = "bankroll_transaction")
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class BankrollTransaction {
-
-    @Id
-    @Column(nullable = false, updatable = false)
-    private String id;
+public class BankrollTransaction extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "bankroll_id", nullable = false, updatable = false)
@@ -43,21 +37,14 @@ public class BankrollTransaction {
     private TransactionType type;
 
     @Column(name = "amount", nullable = false)
-    private double amount;
+    private BigDecimal amount;
 
     @Column(name = "balance_after", nullable = false)
-    private double balanceAfter;
+    private BigDecimal balanceAfter;
 
     @Column(name = "reference_bet_id")
     private String referenceBetId;
 
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TEXT")
     private Instant createdAt;
-
-    @PrePersist
-    void generateId() {
-        if (id == null) {
-            id = UUID.randomUUID().toString();
-        }
-    }
 }

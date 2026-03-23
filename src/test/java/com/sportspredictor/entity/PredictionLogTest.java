@@ -37,7 +37,9 @@ class PredictionLogTest {
     class Builder {
 
         @Test
-        void buildsWithAllFields() {
+        void preservesAllFieldsExactly() {
+            Instant createdAt = Instant.parse("2026-03-22T12:00:00Z");
+
             PredictionLog log = PredictionLog.builder()
                     .id("pred-1")
                     .eventId("evt-123")
@@ -46,11 +48,12 @@ class PredictionLogTest {
                     .predictedOutcome("{\"winner\": \"Lakers\"}")
                     .confidence(0.72)
                     .keyFactors("{\"home_advantage\": true}")
-                    .createdAt(Instant.now())
+                    .createdAt(createdAt)
                     .build();
 
             assertThat(log.getPredictionType()).isEqualTo(PredictionType.SPREAD);
             assertThat(log.getConfidence()).isEqualTo(0.72);
+            assertThat(log.getCreatedAt()).isEqualTo(createdAt);
             assertThat(log.getActualOutcome()).isNull();
             assertThat(log.getSettledAt()).isNull();
         }

@@ -36,8 +36,9 @@ class OddsSnapshotTest {
     class Builder {
 
         @Test
-        void buildsWithAllFields() {
-            Instant now = Instant.now();
+        void preservesAllFieldsExactly() {
+            Instant capturedAt = Instant.parse("2026-03-15T20:00:00Z");
+
             OddsSnapshot snapshot = OddsSnapshot.builder()
                     .id("snap-1")
                     .eventId("evt-123")
@@ -45,11 +46,12 @@ class OddsSnapshotTest {
                     .bookmaker("DraftKings")
                     .market("h2h")
                     .oddsData("{\"home\": -150, \"away\": 130}")
-                    .capturedAt(now)
+                    .capturedAt(capturedAt)
                     .build();
 
             assertThat(snapshot.getBookmaker()).isEqualTo("DraftKings");
             assertThat(snapshot.getOddsData()).contains("home");
+            assertThat(snapshot.getCapturedAt()).isEqualTo(capturedAt);
         }
     }
 }

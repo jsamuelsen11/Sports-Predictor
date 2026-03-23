@@ -5,31 +5,24 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 /** A logged prediction for an event, including confidence and eventual outcome. */
 @Entity
 @Table(name = "prediction_log")
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class PredictionLog {
-
-    @Id
-    @Column(nullable = false, updatable = false)
-    private String id;
+public class PredictionLog extends BaseEntity {
 
     @Column(name = "event_id", nullable = false)
     private String eventId;
@@ -58,11 +51,4 @@ public class PredictionLog {
 
     @Column(name = "settled_at", columnDefinition = "TEXT")
     private Instant settledAt;
-
-    @PrePersist
-    void generateId() {
-        if (id == null) {
-            id = UUID.randomUUID().toString();
-        }
-    }
 }

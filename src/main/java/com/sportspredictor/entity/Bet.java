@@ -7,33 +7,27 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 /** A single bet placed against a bankroll. */
 @Entity
 @Table(name = "bet")
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class Bet {
-
-    @Id
-    @Column(nullable = false, updatable = false)
-    private String id;
+public class Bet extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "bankroll_id", nullable = false, updatable = false)
@@ -48,16 +42,16 @@ public class Bet {
     private BetStatus status;
 
     @Column(name = "stake", nullable = false)
-    private double stake;
+    private BigDecimal stake;
 
     @Column(name = "odds", nullable = false)
-    private double odds;
+    private BigDecimal odds;
 
     @Column(name = "potential_payout", nullable = false)
-    private double potentialPayout;
+    private BigDecimal potentialPayout;
 
     @Column(name = "actual_payout")
-    private Double actualPayout;
+    private BigDecimal actualPayout;
 
     @Column(name = "sport", nullable = false)
     private String sport;
@@ -76,11 +70,4 @@ public class Bet {
 
     @Column(name = "metadata")
     private String metadata;
-
-    @PrePersist
-    void generateId() {
-        if (id == null) {
-            id = UUID.randomUUID().toString();
-        }
-    }
 }

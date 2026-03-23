@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sportspredictor.entity.enums.BetStatus;
 import com.sportspredictor.entity.enums.BetType;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
@@ -38,23 +39,30 @@ class BetTest {
     class Builder {
 
         @Test
-        void buildsWithEnumFields() {
+        void preservesAllFieldsExactly() {
+            Instant placedAt = Instant.parse("2026-03-20T14:00:00Z");
+
             Bet bet = Bet.builder()
                     .id("bet-1")
                     .betType(BetType.PARLAY)
                     .status(BetStatus.PENDING)
-                    .stake(50.0)
-                    .odds(-110.0)
-                    .potentialPayout(95.45)
+                    .stake(new BigDecimal("50.00"))
+                    .odds(new BigDecimal("-110"))
+                    .potentialPayout(new BigDecimal("95.45"))
                     .sport("NFL")
                     .eventId("evt-123")
                     .description("Chiefs vs Bills spread")
-                    .placedAt(Instant.now())
+                    .placedAt(placedAt)
                     .build();
 
             assertThat(bet.getBetType()).isEqualTo(BetType.PARLAY);
             assertThat(bet.getStatus()).isEqualTo(BetStatus.PENDING);
+            assertThat(bet.getStake()).isEqualByComparingTo(new BigDecimal("50.00"));
+            assertThat(bet.getOdds()).isEqualByComparingTo(new BigDecimal("-110"));
+            assertThat(bet.getPotentialPayout()).isEqualByComparingTo(new BigDecimal("95.45"));
+            assertThat(bet.getPlacedAt()).isEqualTo(placedAt);
             assertThat(bet.getActualPayout()).isNull();
+            assertThat(bet.getSettledAt()).isNull();
             assertThat(bet.getMetadata()).isNull();
         }
     }

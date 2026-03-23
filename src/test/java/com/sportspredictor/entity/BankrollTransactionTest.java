@@ -3,6 +3,7 @@ package com.sportspredictor.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sportspredictor.entity.enums.TransactionType;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
@@ -38,16 +39,21 @@ class BankrollTransactionTest {
     class Builder {
 
         @Test
-        void buildsWithAllFields() {
+        void preservesAllFieldsExactly() {
+            Instant createdAt = Instant.parse("2026-02-10T09:00:00Z");
+
             BankrollTransaction tx = BankrollTransaction.builder()
                     .id("tx-1")
                     .type(TransactionType.DEPOSIT)
-                    .amount(500.0)
-                    .balanceAfter(1500.0)
-                    .createdAt(Instant.now())
+                    .amount(new BigDecimal("500.00"))
+                    .balanceAfter(new BigDecimal("1500.00"))
+                    .createdAt(createdAt)
                     .build();
 
             assertThat(tx.getType()).isEqualTo(TransactionType.DEPOSIT);
+            assertThat(tx.getAmount()).isEqualByComparingTo(new BigDecimal("500.00"));
+            assertThat(tx.getBalanceAfter()).isEqualByComparingTo(new BigDecimal("1500.00"));
+            assertThat(tx.getCreatedAt()).isEqualTo(createdAt);
             assertThat(tx.getReferenceBetId()).isNull();
         }
     }
