@@ -32,6 +32,15 @@ spring:
         sse-message-endpoint: /mcp/messages
         stdio: true
 
+app:
+  cache:
+    odds-ttl: 5m
+    schedules-ttl: 1h
+    team-stats-ttl: 6h
+    player-stats-ttl: 6h
+    weather-ttl: 30m
+    standings-ttl: 1h
+
 resilience4j:
   ratelimiter:
     instances:

@@ -13,7 +13,7 @@ CREATE TABLE bet (
     placed_at        TEXT NOT NULL,
     settled_at       TEXT,
     metadata         TEXT,
-    FOREIGN KEY (bankroll_id) REFERENCES bankroll(id)
+    FOREIGN KEY (bankroll_id) REFERENCES bankroll(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE bet_leg (
@@ -26,7 +26,8 @@ CREATE TABLE bet_leg (
     event_id      TEXT NOT NULL,
     sport         TEXT NOT NULL,
     result_detail TEXT,
-    FOREIGN KEY (bet_id) REFERENCES bet(id)
+    FOREIGN KEY (bet_id) REFERENCES bet(id) ON DELETE RESTRICT,
+    UNIQUE (bet_id, leg_number)
 );
 
 CREATE INDEX idx_bet_bankroll_id ON bet(bankroll_id);

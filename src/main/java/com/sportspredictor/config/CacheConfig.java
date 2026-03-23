@@ -3,6 +3,7 @@ package com.sportspredictor.config;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Duration;
 import java.util.List;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
@@ -13,19 +14,20 @@ import org.springframework.context.annotation.Configuration;
 /** Configures named Caffeine caches with per-cache TTL policies per ADR-002. */
 @Configuration
 @EnableCaching
+@EnableConfigurationProperties(CacheProperties.class)
 public class CacheConfig {
 
     /** Creates a cache manager with individually configured caches for external API responses. */
     @Bean
-    public CacheManager cacheManager() {
+    public CacheManager cacheManager(CacheProperties props) {
         SimpleCacheManager cacheManager = new SimpleCacheManager();
         cacheManager.setCaches(List.of(
-                buildCache("odds", Duration.ofMinutes(5)),
-                buildCache("schedules", Duration.ofHours(1)),
-                buildCache("team-stats", Duration.ofHours(6)),
-                buildCache("player-stats", Duration.ofHours(6)),
-                buildCache("weather", Duration.ofMinutes(30)),
-                buildCache("standings", Duration.ofHours(1))));
+                buildCache("odds", props.oddsTtl()),
+                buildCache("schedules", props.schedulesTtl()),
+                buildCache("team-stats", props.teamStatsTtl()),
+                buildCache("player-stats", props.playerStatsTtl()),
+                buildCache("weather", props.weatherTtl()),
+                buildCache("standings", props.standingsTtl())));
         return cacheManager;
     }
 
