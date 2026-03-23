@@ -1,9 +1,14 @@
 [versions]
 archunit = "1.4.1"
 caffeine = "3.1.8"
+checkstyle = "13.3.0"
+error-prone = "2.48.0"
+error-prone-plugin = "5.1.0"
 hibernate-community-dialects = "6.6.11.Final"
 lombok = "1.18.38"
 resilience4j = "2.3.0"
+spotbugs-plugin = "6.4.8"
+spotless = "8.4.0"
 spring-ai = "1.1.3"
 spring-boot = "3.5.9"
 spring-dependency-management = "1.1.7"
@@ -11,6 +16,9 @@ sqlite-jdbc = "3.47.2.0"
 wiremock = "3.13.2"
 
 [plugins]
+errorprone = { id = "net.ltgt.errorprone", version.ref = "error-prone-plugin" }
+spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugs-plugin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
 
@@ -42,6 +50,9 @@ resilience4j-spring-boot3 = { module = "io.github.resilience4j:resilience4j-spri
 
 # Lombok
 lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+
+# Code quality
+error-prone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "error-prone" }
 
 # Test
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
