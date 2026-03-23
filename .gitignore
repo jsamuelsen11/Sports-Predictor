@@ -18,6 +18,8 @@ data/
 .project
 .classpath
 .settings/
+.factorypath
+bin/
 *.swp
 *~
 
