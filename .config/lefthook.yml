@@ -13,7 +13,7 @@ pre-commit:
         parallel: true
         jobs:
           - name: spotless
-            glob: "*.{java,kt,kts}"
+            glob: "**/*.{java,kt,kts}"
             run: ./gradlew spotlessApply --daemon
             stage_fixed: true
 
@@ -43,12 +43,12 @@ pre-commit:
         parallel: true
         jobs:
           - name: checkstyle
-            glob: "*.java"
+            glob: "**/*.java"
             run: ./gradlew checkstyleMain --daemon
             fail_text: "checkstyle found issues — fix them before committing"
 
           - name: spotbugs
-            glob: "*.java"
+            glob: "**/*.java"
             run: ./gradlew spotbugsMain --daemon
             fail_text: "spotbugs found issues — fix them before committing"
 
