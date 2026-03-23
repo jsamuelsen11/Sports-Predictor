@@ -1,5 +1,12 @@
+import net.ltgt.gradle.errorprone.errorprone
+
 plugins {
     java
+    jacoco
+    checkstyle
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.spotbugs)
+    alias(libs.plugins.errorprone)
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
 }
@@ -50,6 +57,9 @@ dependencies {
     testCompileOnly(libs.lombok)
     testAnnotationProcessor(libs.lombok)
 
+    // Code quality
+    errorprone(libs.error.prone.core)
+
     // Test
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.wiremock.standalone)
@@ -58,4 +68,88 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// ---------------------------------------------------------------------------
+// Code Quality
+// ---------------------------------------------------------------------------
+
+// Spotless — Palantir Java Format
+spotless {
+    java {
+        target("src/*/java/**/*.java")
+        palantirJavaFormat()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+// Checkstyle — Google style
+checkstyle {
+    toolVersion = libs.versions.checkstyle.get()
+    configFile = file("config/checkstyle/checkstyle.xml")
+    isIgnoreFailures = false
+    maxWarnings = 0
+}
+
+tasks.withType<Checkstyle> {
+    reports {
+        xml.required.set(false)
+        html.required.set(true)
+    }
+}
+
+// SpotBugs — static analysis
+spotbugs {
+    effort.set(com.github.spotbugs.snom.Effort.MAX)
+    reportLevel.set(com.github.spotbugs.snom.Confidence.MEDIUM)
+    excludeFilter.set(file("config/spotbugs/exclude-filter.xml"))
+}
+
+tasks.withType<com.github.spotbugs.snom.SpotBugsTask> {
+    reports.create("html") {
+        required.set(true)
+        setStylesheet("fancy-hist.xsl")
+    }
+    reports.create("xml") {
+        required.set(false)
+    }
+}
+
+// Error Prone — compile-time bug detection
+tasks.withType<JavaCompile>().configureEach {
+    options.errorprone.disableWarningsInGeneratedCode = true
+    options.errorprone.disable("MissingSummary")
+}
+
+// JaCoCo — coverage enforcement
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.jacocoTestReport)
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.70".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(tasks.named("spotlessCheck"))
+    dependsOn(tasks.jacocoTestCoverageVerification)
 }
