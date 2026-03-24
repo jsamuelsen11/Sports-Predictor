@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-01-10T12:00:00Z",
+  "previous_timestamp": "2026-01-10T11:00:00Z",
+  "next_timestamp": "2026-01-10T13:00:00Z",
+  "data": [
+    {
+      "id": "abc123def456",
+      "sport_key": "americanfootball_nfl",
+      "sport_title": "NFL",
+      "commence_time": "2026-01-12T18:00:00Z",
+      "home_team": "Buffalo Bills",
+      "away_team": "Kansas City Chiefs",
+      "bookmakers": [
+        {
+          "key": "draftkings",
+          "title": "DraftKings",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                { "name": "Buffalo Bills", "price": -145, "point": null },
+                { "name": "Kansas City Chiefs", "price": 125, "point": null }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
