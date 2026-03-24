@@ -47,6 +47,17 @@ class LayeredArchitectureTest {
                     "com.sportspredictor.repository..")
             .allowEmptyShould(true);
 
+    /** Resources depend only on services — same constraints as tools. */
+    @ArchTest
+    static final ArchRule resourcesShouldOnlyDependOnServices = noClasses()
+            .that()
+            .resideInAPackage("com.sportspredictor.resource..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    "com.sportspredictor.repository..", "com.sportspredictor.client..", "com.sportspredictor.entity..")
+            .allowEmptyShould(true);
+
     /** No circular dependencies between top-level packages. */
     @ArchTest
     static final ArchRule noCyclicDependencies =
