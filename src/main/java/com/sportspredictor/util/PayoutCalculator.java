@@ -84,8 +84,10 @@ public final class PayoutCalculator {
         }
 
         double combinedDecimal = 1.0;
-        for (int odds : legOdds) {
-            combinedDecimal *= OddsUtil.americanToDecimal(odds);
+        for (int i = 0; i < legOdds.size(); i++) {
+            Integer leg = legOdds.get(i);
+            Objects.requireNonNull(leg, "Parlay leg odds at index " + i + " must not be null");
+            combinedDecimal *= OddsUtil.americanToDecimal(leg);
         }
 
         return stake.multiply(BigDecimal.valueOf(combinedDecimal - 1.0)).setScale(PAYOUT_SCALE, RoundingMode.HALF_UP);

@@ -206,5 +206,28 @@ class PayoutCalculatorTest {
         void rejectsInvalidOdds(int invalid) {
             assertThatIllegalArgumentException().isThrownBy(() -> PayoutCalculator.moneylinePayout(HUNDRED, invalid));
         }
+
+        @Test
+        void totalReturnRejectsNullStake() {
+            assertThatNullPointerException().isThrownBy(() -> PayoutCalculator.totalReturn(null, -110));
+        }
+
+        @Test
+        void parlayPayoutRejectsZeroStake() {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> PayoutCalculator.parlayPayout(BigDecimal.ZERO, List.of(-110, -110)));
+        }
+
+        @Test
+        void parlayPayoutRejectsNullLeg() {
+            List<Integer> legs = java.util.Arrays.asList(-110, null);
+            assertThatNullPointerException().isThrownBy(() -> PayoutCalculator.parlayPayout(HUNDRED, legs));
+        }
+
+        @Test
+        void settleBetRejectsZeroStake() {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> PayoutCalculator.settleBet(BigDecimal.ZERO, -110, "WON"));
+        }
     }
 }

@@ -69,8 +69,8 @@ class OddsToolTest {
             ImpliedProbabilityResponse result = tool.calculateImpliedProbability(-110, -110);
             assertThat(result.vig()).isCloseTo(0.0476, within(0.001));
             assertThat(result.trueProbability()).isCloseTo(0.5, within(0.001));
-            assertThat(result.vigPercent()).isNotNull();
-            assertThat(result.trueProbabilityPercent()).isNotNull();
+            assertThat(result.vigPercent()).isEqualTo("4.76%");
+            assertThat(result.trueProbabilityPercent()).isEqualTo("50.00%");
         }
 
         @Test
