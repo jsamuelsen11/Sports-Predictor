@@ -16,30 +16,35 @@ class LayeredArchitectureTest {
     @ArchTest
     static final ArchRule toolsShouldOnlyDependOnServices = noClasses()
             .that()
-            .resideInAPackage("..tool..")
+            .resideInAPackage("com.sportspredictor.tool..")
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage("..repository..", "..client..", "..entity..")
+            .resideInAnyPackage(
+                    "com.sportspredictor.repository..", "com.sportspredictor.client..", "com.sportspredictor.entity..")
             .allowEmptyShould(true);
 
     /** Services must not depend on tools — data flows tool -> service, not the reverse. */
     @ArchTest
     static final ArchRule servicesShouldNotDependOnTools = noClasses()
             .that()
-            .resideInAPackage("..service..")
+            .resideInAPackage("com.sportspredictor.service..")
             .should()
             .dependOnClassesThat()
-            .resideInAPackage("..tool..")
+            .resideInAPackage("com.sportspredictor.tool..")
             .allowEmptyShould(true);
 
     /** Clients are self-contained — no dependencies on entities, services, tools, or repositories. */
     @ArchTest
     static final ArchRule clientsShouldBeSelfContained = noClasses()
             .that()
-            .resideInAPackage("..client..")
+            .resideInAPackage("com.sportspredictor.client..")
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage("..entity..", "..service..", "..tool..", "..repository..")
+            .resideInAnyPackage(
+                    "com.sportspredictor.entity..",
+                    "com.sportspredictor.service..",
+                    "com.sportspredictor.tool..",
+                    "com.sportspredictor.repository..")
             .allowEmptyShould(true);
 
     /** No circular dependencies between top-level packages. */

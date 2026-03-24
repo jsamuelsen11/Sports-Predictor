@@ -1,0 +1,23 @@
+{
+  "injuries": [
+    {
+      "team": {
+        "id": "12",
+        "displayName": "Kansas City Chiefs",
+        "abbreviation": "KC"
+      },
+      "injuries": [
+        {
+          "athlete": {
+            "id": "3139477",
+            "displayName": "Patrick Mahomes",
+            "position": "QB"
+          },
+          "status": "Questionable",
+          "date": "2026-01-10",
+          "description": "Ankle"
+        }
+      ]
+    }
+  ]
+}

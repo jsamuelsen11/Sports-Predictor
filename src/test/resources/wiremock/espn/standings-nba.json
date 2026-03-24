@@ -1,0 +1,21 @@
+{
+  "children": [
+    {
+      "name": "Eastern Conference",
+      "standings": [
+        {
+          "entries": [
+            {
+              "team": "Boston Celtics",
+              "stats": [
+                { "name": "wins", "value": 48.0, "displayValue": "48" },
+                { "name": "losses", "value": 12.0, "displayValue": "12" },
+                { "name": "winPercent", "value": 0.8, "displayValue": ".800" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

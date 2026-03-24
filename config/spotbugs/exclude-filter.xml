@@ -5,4 +5,9 @@
         <Package name="com.sportspredictor.entity"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
+    <!-- Exclude mutable List exposure in client DTO records — these are deserialized API responses -->
+    <Match>
+        <Package name="~com\.sportspredictor\.client\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
 </FindBugsFilter>

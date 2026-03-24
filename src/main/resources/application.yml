@@ -33,6 +33,17 @@ spring:
         stdio: true
 
 app:
+  client:
+    odds-api:
+      base-url: https://api.the-odds-api.com/v4
+      api-key: ${ODDS_API_KEY:}
+    api-sports:
+      base-url: https://v3.football.api-sports.io
+      api-key: ${API_SPORTS_KEY:}
+    espn:
+      base-url: https://site.api.espn.com
+    open-meteo:
+      base-url: https://api.open-meteo.com/v1
   cache:
     odds-ttl: 5m
     schedules-ttl: 1h

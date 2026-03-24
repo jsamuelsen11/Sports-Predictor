@@ -1,0 +1,44 @@
+{
+  "events": [
+    {
+      "id": "401547417",
+      "date": "2026-01-12T18:00Z",
+      "name": "Kansas City Chiefs at Buffalo Bills",
+      "shortName": "KC @ BUF",
+      "competitions": [
+        {
+          "id": "401547417",
+          "date": "2026-01-12T18:00Z",
+          "competitors": [
+            {
+              "id": "2",
+              "team": {
+                "id": "2",
+                "displayName": "Buffalo Bills",
+                "abbreviation": "BUF"
+              },
+              "score": "27",
+              "winner": true
+            },
+            {
+              "id": "12",
+              "team": {
+                "id": "12",
+                "displayName": "Kansas City Chiefs",
+                "abbreviation": "KC"
+              },
+              "score": "24",
+              "winner": false
+            }
+          ],
+          "status": {
+            "type": {
+              "name": "STATUS_FINAL",
+              "completed": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
