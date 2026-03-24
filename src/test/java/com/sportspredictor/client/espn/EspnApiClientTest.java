@@ -8,8 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import com.sportspredictor.client.WireMockFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,7 +39,7 @@ class EspnApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/apis/site/v2/sports/football/nfl/scoreboard"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/espn/scoreboard-nfl.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/espn/scoreboard-nfl.json"))));
 
             ScoreboardResponse response = client.getScoreboard("football", "nfl");
 
@@ -57,7 +56,7 @@ class EspnApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/apis/site/v2/sports/football/nfl/scoreboard"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/espn/scoreboard-nfl.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/espn/scoreboard-nfl.json"))));
 
             ScoreboardResponse response = client.getScoreboard("football", "nfl");
 
@@ -78,7 +77,7 @@ class EspnApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/apis/site/v2/sports/football/nfl/scoreboard"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/espn/scoreboard-nfl.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/espn/scoreboard-nfl.json"))));
 
             ScoreboardResponse response = client.getScoreboard("football", "nfl");
 
@@ -97,7 +96,7 @@ class EspnApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/apis/site/v2/sports/basketball/nba/standings"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/espn/standings-nba.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/espn/standings-nba.json"))));
 
             StandingsResponse response = client.getStandings("basketball", "nba");
 
@@ -115,7 +114,7 @@ class EspnApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/apis/site/v2/sports/football/nfl/injuries"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/espn/injuries-nfl.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/espn/injuries-nfl.json"))));
 
             InjuryResponse response = client.getInjuries("football", "nfl");
 
@@ -129,17 +128,6 @@ class EspnApiClientTest {
             InjuryResponse.Injury injury = teamInjuries.injuries().getFirst();
             assertThat(injury.athlete().displayName()).isEqualTo("Patrick Mahomes");
             assertThat(injury.status()).isEqualTo("Questionable");
-        }
-    }
-
-    private static String loadFixture(String path) {
-        try (var stream = EspnApiClientTest.class.getClassLoader().getResourceAsStream(path)) {
-            if (stream == null) {
-                throw new IllegalStateException("Fixture not found: " + path);
-            }
-            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to load fixture: " + path, e);
         }
     }
 }

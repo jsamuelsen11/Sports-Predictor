@@ -1,6 +1,7 @@
 package com.sportspredictor.client.apisports;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /** Fixture (game) data from API-Sports. */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -12,9 +13,10 @@ public record FixtureData(Fixture fixture, League league, Teams teams, Goals goa
 
     /** Fixture status information. */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Status(String longName, String shortName, Integer elapsed) {
-        // Jackson maps "long" -> longName, "short" -> shortName via @JsonProperty if needed
-    }
+    public record Status(
+            @JsonProperty("long") String longName,
+            @JsonProperty("short") String shortName,
+            Integer elapsed) {}
 
     /** League context for the fixture. */
     @JsonIgnoreProperties(ignoreUnknown = true)

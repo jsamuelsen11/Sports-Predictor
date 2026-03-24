@@ -1,6 +1,7 @@
 package com.sportspredictor.client.apisports;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /** League standings data from API-Sports. */
@@ -25,5 +26,5 @@ public record StandingsData(League league) {
 
     /** Goals for and against. */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record GoalStats(int forGoals, int against) {}
+    public record GoalStats(@JsonProperty("for") int forGoals, int against) {}
 }

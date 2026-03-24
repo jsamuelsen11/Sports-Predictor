@@ -1,5 +1,6 @@
 package com.sportspredictor.config;
 
+import java.util.Objects;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /** Externalized API client configuration, bound to {@code app.client} properties. */
@@ -7,32 +8,25 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record ClientProperties(
         OddsApiProps oddsApi, ApiSportsProps apiSports, EspnProps espn, OpenMeteoProps openMeteo) {
 
-    /** Creates properties with default base URLs when values are not specified. */
+    private static final String ODDS_API_BASE_URL = "https://api.the-odds-api.com/v4";
+    private static final String API_SPORTS_BASE_URL = "https://v3.football.api-sports.io";
+    private static final String ESPN_BASE_URL = "https://site.api.espn.com";
+    private static final String OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1";
+
+    /** Creates properties with default sub-configurations when values are not specified. */
     public ClientProperties {
-        if (oddsApi == null) {
-            oddsApi = new OddsApiProps("https://api.the-odds-api.com/v4", "");
-        }
-        if (apiSports == null) {
-            apiSports = new ApiSportsProps("https://v3.football.api-sports.io", "");
-        }
-        if (espn == null) {
-            espn = new EspnProps("https://site.api.espn.com");
-        }
-        if (openMeteo == null) {
-            openMeteo = new OpenMeteoProps("https://api.open-meteo.com/v1");
-        }
+        oddsApi = Objects.requireNonNullElse(oddsApi, new OddsApiProps(ODDS_API_BASE_URL, ""));
+        apiSports = Objects.requireNonNullElse(apiSports, new ApiSportsProps(API_SPORTS_BASE_URL, ""));
+        espn = Objects.requireNonNullElse(espn, new EspnProps(ESPN_BASE_URL));
+        openMeteo = Objects.requireNonNullElse(openMeteo, new OpenMeteoProps(OPEN_METEO_BASE_URL));
     }
 
     /** The Odds API configuration. */
     public record OddsApiProps(String baseUrl, String apiKey) {
         /** Applies defaults for null values. */
         public OddsApiProps {
-            if (baseUrl == null) {
-                baseUrl = "https://api.the-odds-api.com/v4";
-            }
-            if (apiKey == null) {
-                apiKey = "";
-            }
+            baseUrl = Objects.requireNonNullElse(baseUrl, ODDS_API_BASE_URL);
+            apiKey = Objects.requireNonNullElse(apiKey, "");
         }
     }
 
@@ -40,12 +34,8 @@ public record ClientProperties(
     public record ApiSportsProps(String baseUrl, String apiKey) {
         /** Applies defaults for null values. */
         public ApiSportsProps {
-            if (baseUrl == null) {
-                baseUrl = "https://v3.football.api-sports.io";
-            }
-            if (apiKey == null) {
-                apiKey = "";
-            }
+            baseUrl = Objects.requireNonNullElse(baseUrl, API_SPORTS_BASE_URL);
+            apiKey = Objects.requireNonNullElse(apiKey, "");
         }
     }
 
@@ -53,9 +43,7 @@ public record ClientProperties(
     public record EspnProps(String baseUrl) {
         /** Applies defaults for null values. */
         public EspnProps {
-            if (baseUrl == null) {
-                baseUrl = "https://site.api.espn.com";
-            }
+            baseUrl = Objects.requireNonNullElse(baseUrl, ESPN_BASE_URL);
         }
     }
 
@@ -63,9 +51,7 @@ public record ClientProperties(
     public record OpenMeteoProps(String baseUrl) {
         /** Applies defaults for null values. */
         public OpenMeteoProps {
-            if (baseUrl == null) {
-                baseUrl = "https://api.open-meteo.com/v1";
-            }
+            baseUrl = Objects.requireNonNullElse(baseUrl, OPEN_METEO_BASE_URL);
         }
     }
 }

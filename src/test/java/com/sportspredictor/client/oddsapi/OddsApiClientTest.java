@@ -8,8 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import com.sportspredictor.client.WireMockFixtures;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -41,7 +40,7 @@ class OddsApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/sports"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/odds-api/sports.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/odds-api/sports.json"))));
 
             List<SportResponse> sports = client.getSports();
 
@@ -60,7 +59,7 @@ class OddsApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/sports/americanfootball_nfl/odds"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/odds-api/odds-nfl-h2h.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/odds-api/odds-nfl-h2h.json"))));
 
             List<OddsResponse> odds = client.getOdds("americanfootball_nfl", "us", "h2h", "american");
 
@@ -85,7 +84,7 @@ class OddsApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/sports/americanfootball_nfl/odds"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/odds-api/odds-nfl-h2h.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/odds-api/odds-nfl-h2h.json"))));
 
             List<OddsResponse> odds = client.getOdds("americanfootball_nfl", "us", null, null);
 
@@ -109,7 +108,7 @@ class OddsApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/sports/americanfootball_nfl/scores"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/odds-api/scores-nfl.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/odds-api/scores-nfl.json"))));
 
             List<ScoreResponse> scores = client.getScores("americanfootball_nfl", 3);
 
@@ -131,7 +130,7 @@ class OddsApiClientTest {
             WireMock.stubFor(get(urlPathEqualTo("/sports/americanfootball_nfl/odds-history"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/odds-api/odds-history.json"))));
+                            .withBody(WireMockFixtures.load("wiremock/odds-api/odds-history.json"))));
 
             OddsHistoryResponse response =
                     client.getHistoricalOdds("americanfootball_nfl", "us", "h2h", "2026-01-10T12:00:00Z");
@@ -141,17 +140,6 @@ class OddsApiClientTest {
             assertThat(response.nextTimestamp()).isEqualTo("2026-01-10T13:00:00Z");
             assertThat(response.data()).hasSize(1);
             assertThat(response.data().getFirst().sportKey()).isEqualTo("americanfootball_nfl");
-        }
-    }
-
-    private static String loadFixture(String path) {
-        try (var stream = OddsApiClientTest.class.getClassLoader().getResourceAsStream(path)) {
-            if (stream == null) {
-                throw new IllegalStateException("Fixture not found: " + path);
-            }
-            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to load fixture: " + path, e);
         }
     }
 }

@@ -7,8 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import com.sportspredictor.client.WireMockFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -75,18 +74,7 @@ class OpenMeteoClientTest {
             com.github.tomakehurst.wiremock.client.WireMock.stubFor(get(urlPathEqualTo("/forecast"))
                     .willReturn(aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody(loadFixture("wiremock/open-meteo/forecast-response.json"))));
-        }
-    }
-
-    private static String loadFixture(String path) {
-        try (var stream = OpenMeteoClientTest.class.getClassLoader().getResourceAsStream(path)) {
-            if (stream == null) {
-                throw new IllegalStateException("Fixture not found: " + path);
-            }
-            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to load fixture: " + path, e);
+                            .withBody(WireMockFixtures.load("wiremock/open-meteo/forecast-response.json"))));
         }
     }
 }

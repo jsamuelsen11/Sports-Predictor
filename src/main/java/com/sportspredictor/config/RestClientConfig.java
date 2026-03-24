@@ -35,27 +35,9 @@ public class RestClientConfig {
     /** The Odds API client — API key injected as {@code apiKey} query parameter. */
     @Bean
     public OddsApiClient oddsApiClient(ClientProperties props) {
-        String apiKey = props.oddsApi().apiKey();
         RestClient restClient = RestClient.builder()
                 .baseUrl(props.oddsApi().baseUrl())
-                .defaultUriVariables(java.util.Map.of())
-                .requestInterceptor((request, body, execution) -> {
-                    if (!apiKey.isEmpty()) {
-                        var uri = org.springframework.web.util.UriComponentsBuilder.fromUri(request.getURI())
-                                .queryParam("apiKey", apiKey)
-                                .build()
-                                .toUri();
-                        return execution.execute(
-                                new org.springframework.http.client.support.HttpRequestWrapper(request) {
-                                    @Override
-                                    public java.net.URI getURI() {
-                                        return uri;
-                                    }
-                                },
-                                body);
-                    }
-                    return execution.execute(request, body);
-                })
+                .requestInterceptor(new OddsApiKeyInterceptor(props.oddsApi().apiKey()))
                 .build();
         return createProxy(restClient, OddsApiClient.class);
     }
