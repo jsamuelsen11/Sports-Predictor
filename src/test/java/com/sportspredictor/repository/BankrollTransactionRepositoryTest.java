@@ -17,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 /** Tests for {@link BankrollTransactionRepository}. */
 @DataJpaTest
+// SQLite is the only JDBC driver on the classpath; there is no embedded DB to replace with.
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class BankrollTransactionRepositoryTest {
 
@@ -30,25 +31,17 @@ class BankrollTransactionRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        bankroll = bankrollRepository.saveAndFlush(Bankroll.builder()
-                .name("Test Bankroll")
-                .startingBalance(new BigDecimal("1000.00"))
-                .currentBalance(new BigDecimal("1000.00"))
-                .createdAt(Instant.parse("2026-01-01T00:00:00Z"))
-                .build());
+        bankroll = bankrollRepository.saveAndFlush(TestFixtures.bankroll().build());
     }
 
     private BankrollTransaction saveTransaction(
             TransactionType type, BigDecimal amount, Instant createdAt, String referenceBetId) {
-        BankrollTransaction txn = BankrollTransaction.builder()
-                .bankroll(bankroll)
+        return transactionRepository.saveAndFlush(TestFixtures.transaction(bankroll)
                 .type(type)
                 .amount(amount)
-                .balanceAfter(new BigDecimal("1050.00"))
                 .referenceBetId(referenceBetId)
                 .createdAt(createdAt)
-                .build();
-        return transactionRepository.saveAndFlush(txn);
+                .build());
     }
 
     @Nested
@@ -62,6 +55,13 @@ class BankrollTransactionRepositoryTest {
             List<BankrollTransaction> result = transactionRepository.findByBankrollId(bankroll.getId());
 
             assertThat(result).hasSize(1);
+        }
+
+        @Test
+        void returnsEmptyForUnknownBankroll() {
+            List<BankrollTransaction> result = transactionRepository.findByBankrollId("unknown");
+
+            assertThat(result).isEmpty();
         }
     }
 
@@ -119,6 +119,33 @@ class BankrollTransactionRepositoryTest {
                     Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-01-31T00:00:00Z"));
 
             assertThat(result).hasSize(1);
+        }
+
+        @Test
+        void includesTransactionsExactlyAtBoundaries() {
+            Instant start = Instant.parse("2026-02-01T00:00:00Z");
+            Instant end = Instant.parse("2026-02-01T00:00:02Z");
+
+            BankrollTransaction atStart =
+                    saveTransaction(TransactionType.DEPOSIT, new BigDecimal("10.00"), start, null);
+            BankrollTransaction inMiddle =
+                    saveTransaction(TransactionType.DEPOSIT, new BigDecimal("20.00"), start.plusSeconds(1), null);
+            BankrollTransaction atEnd = saveTransaction(TransactionType.DEPOSIT, new BigDecimal("30.00"), end, null);
+
+            List<BankrollTransaction> result = transactionRepository.findByCreatedAtBetween(start, end);
+
+            assertThat(result).containsExactlyInAnyOrder(atStart, inMiddle, atEnd);
+        }
+
+        @Test
+        void returnsEmptyWhenNoTransactionsInRange() {
+            saveTransaction(
+                    TransactionType.DEPOSIT, new BigDecimal("100.00"), Instant.parse("2026-06-01T00:00:00Z"), null);
+
+            List<BankrollTransaction> result = transactionRepository.findByCreatedAtBetween(
+                    Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-01-31T00:00:00Z"));
+
+            assertThat(result).isEmpty();
         }
     }
 

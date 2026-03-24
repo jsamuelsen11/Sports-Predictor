@@ -3,7 +3,6 @@ package com.sportspredictor.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sportspredictor.entity.Bankroll;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 /** Tests for {@link BankrollRepository}. */
 @DataJpaTest
+// SQLite is the only JDBC driver on the classpath; there is no embedded DB to replace with.
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class BankrollRepositoryTest {
 
@@ -22,14 +22,11 @@ class BankrollRepositoryTest {
     private BankrollRepository repository;
 
     private Bankroll saveBankroll(String name, Instant createdAt, Instant archivedAt) {
-        Bankroll bankroll = Bankroll.builder()
+        return repository.saveAndFlush(TestFixtures.bankroll()
                 .name(name)
-                .startingBalance(new BigDecimal("1000.00"))
-                .currentBalance(new BigDecimal("1000.00"))
                 .createdAt(createdAt)
                 .archivedAt(archivedAt)
-                .build();
-        return repository.saveAndFlush(bankroll);
+                .build());
     }
 
     @Nested

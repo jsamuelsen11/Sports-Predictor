@@ -14,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 /** Tests for {@link PredictionLogRepository}. */
 @DataJpaTest
+// SQLite is the only JDBC driver on the classpath; there is no embedded DB to replace with.
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class PredictionLogRepositoryTest {
 
@@ -22,17 +23,13 @@ class PredictionLogRepositoryTest {
 
     private PredictionLog savePrediction(
             String eventId, String sport, PredictionType type, String actualOutcome, Instant createdAt) {
-        PredictionLog log = PredictionLog.builder()
+        return repository.saveAndFlush(TestFixtures.predictionLog()
                 .eventId(eventId)
                 .sport(sport)
                 .predictionType(type)
-                .predictedOutcome("Team A wins")
-                .confidence(0.85)
                 .actualOutcome(actualOutcome)
-                .keyFactors("{\"factor1\": \"value1\"}")
                 .createdAt(createdAt)
-                .build();
-        return repository.saveAndFlush(log);
+                .build());
     }
 
     @Nested

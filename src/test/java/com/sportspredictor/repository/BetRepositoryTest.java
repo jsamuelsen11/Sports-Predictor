@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sportspredictor.entity.Bankroll;
 import com.sportspredictor.entity.Bet;
 import com.sportspredictor.entity.enums.BetStatus;
-import com.sportspredictor.entity.enums.BetType;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 /** Tests for {@link BetRepository}. */
 @DataJpaTest
+// SQLite is the only JDBC driver on the classpath; there is no embedded DB to replace with.
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class BetRepositoryTest {
 
@@ -31,28 +30,16 @@ class BetRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        bankroll = bankrollRepository.saveAndFlush(Bankroll.builder()
-                .name("Test Bankroll")
-                .startingBalance(new BigDecimal("1000.00"))
-                .currentBalance(new BigDecimal("1000.00"))
-                .createdAt(Instant.parse("2026-01-01T00:00:00Z"))
-                .build());
+        bankroll = bankrollRepository.saveAndFlush(TestFixtures.bankroll().build());
     }
 
     private Bet saveBet(BetStatus status, String sport, String eventId, Instant placedAt) {
-        Bet bet = Bet.builder()
-                .bankroll(bankroll)
-                .betType(BetType.MONEYLINE)
+        return betRepository.saveAndFlush(TestFixtures.bet(bankroll)
                 .status(status)
-                .stake(new BigDecimal("50.00"))
-                .odds(new BigDecimal("-110"))
-                .potentialPayout(new BigDecimal("95.45"))
                 .sport(sport)
                 .eventId(eventId)
-                .description("Test bet")
                 .placedAt(placedAt)
-                .build();
-        return betRepository.saveAndFlush(bet);
+                .build());
     }
 
     @Nested
@@ -147,6 +134,30 @@ class BetRepositoryTest {
                     Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-01-31T00:00:00Z"));
 
             assertThat(result).hasSize(1);
+        }
+
+        @Test
+        void includesBetsExactlyAtBoundaries() {
+            Instant start = Instant.parse("2026-02-01T00:00:00Z");
+            Instant end = Instant.parse("2026-02-01T00:00:02Z");
+
+            Bet atStart = saveBet(BetStatus.PENDING, "NFL", "evt-start", start);
+            Bet inMiddle = saveBet(BetStatus.PENDING, "NFL", "evt-mid", start.plusSeconds(1));
+            Bet atEnd = saveBet(BetStatus.PENDING, "NFL", "evt-end", end);
+
+            List<Bet> result = betRepository.findByPlacedAtBetween(start, end);
+
+            assertThat(result).containsExactlyInAnyOrder(atStart, inMiddle, atEnd);
+        }
+
+        @Test
+        void returnsEmptyWhenNoBetsInRange() {
+            saveBet(BetStatus.PENDING, "NFL", "evt-1", Instant.parse("2026-06-01T00:00:00Z"));
+
+            List<Bet> result = betRepository.findByPlacedAtBetween(
+                    Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-01-31T00:00:00Z"));
+
+            assertThat(result).isEmpty();
         }
     }
 }

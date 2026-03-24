@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 /** Tests for {@link OddsSnapshotRepository}. */
 @DataJpaTest
+// SQLite is the only JDBC driver on the classpath; there is no embedded DB to replace with.
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class OddsSnapshotRepositoryTest {
 
@@ -21,15 +22,13 @@ class OddsSnapshotRepositoryTest {
 
     private OddsSnapshot saveSnapshot(
             String eventId, String sport, String bookmaker, String market, Instant capturedAt) {
-        OddsSnapshot snapshot = OddsSnapshot.builder()
+        return repository.saveAndFlush(TestFixtures.oddsSnapshot()
                 .eventId(eventId)
                 .sport(sport)
                 .bookmaker(bookmaker)
                 .market(market)
-                .oddsData("{\"home\": -110, \"away\": +100}")
                 .capturedAt(capturedAt)
-                .build();
-        return repository.saveAndFlush(snapshot);
+                .build());
     }
 
     @Nested

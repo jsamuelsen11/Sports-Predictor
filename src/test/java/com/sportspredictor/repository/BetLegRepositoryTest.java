@@ -6,7 +6,6 @@ import com.sportspredictor.entity.Bankroll;
 import com.sportspredictor.entity.Bet;
 import com.sportspredictor.entity.BetLeg;
 import com.sportspredictor.entity.enums.BetLegStatus;
-import com.sportspredictor.entity.enums.BetStatus;
 import com.sportspredictor.entity.enums.BetType;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -20,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 /** Tests for {@link BetLegRepository}. */
 @DataJpaTest
+// SQLite is the only JDBC driver on the classpath; there is no embedded DB to replace with.
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class BetLegRepositoryTest {
 
@@ -36,38 +36,25 @@ class BetLegRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        Bankroll bankroll = bankrollRepository.saveAndFlush(Bankroll.builder()
-                .name("Test Bankroll")
-                .startingBalance(new BigDecimal("1000.00"))
-                .currentBalance(new BigDecimal("1000.00"))
-                .createdAt(Instant.parse("2026-01-01T00:00:00Z"))
-                .build());
+        Bankroll bankroll =
+                bankrollRepository.saveAndFlush(TestFixtures.bankroll().build());
 
-        bet = betRepository.saveAndFlush(Bet.builder()
-                .bankroll(bankroll)
+        bet = betRepository.saveAndFlush(TestFixtures.bet(bankroll)
                 .betType(BetType.PARLAY)
-                .status(BetStatus.PENDING)
-                .stake(new BigDecimal("50.00"))
                 .odds(new BigDecimal("+250"))
                 .potentialPayout(new BigDecimal("175.00"))
-                .sport("NFL")
-                .eventId("evt-1")
                 .description("Parlay bet")
                 .placedAt(Instant.parse("2026-01-10T00:00:00Z"))
                 .build());
     }
 
     private BetLeg saveLeg(int legNumber, BetLegStatus status, String eventId, String sport) {
-        BetLeg leg = BetLeg.builder()
-                .bet(bet)
+        return betLegRepository.saveAndFlush(TestFixtures.betLeg(bet)
                 .legNumber(legNumber)
-                .selection("Team A ML")
-                .odds(new BigDecimal("-110"))
                 .status(status)
                 .eventId(eventId)
                 .sport(sport)
-                .build();
-        return betLegRepository.saveAndFlush(leg);
+                .build());
     }
 
     @Nested
