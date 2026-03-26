@@ -22,4 +22,10 @@ public interface OddsSnapshotRepository extends JpaRepository<OddsSnapshot, Stri
 
     /** Returns snapshots for an event in a specific market. */
     List<OddsSnapshot> findByEventIdAndMarket(String eventId, String market);
+
+    /** Returns all snapshots for the given event ordered by capture time ascending. */
+    List<OddsSnapshot> findByEventIdOrderByCapturedAtAsc(String eventId);
+
+    /** Returns all snapshots for the given sport captured after the specified instant. */
+    List<OddsSnapshot> findBySportAndCapturedAtAfter(String sport, Instant after);
 }
