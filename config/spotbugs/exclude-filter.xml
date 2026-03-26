@@ -13,4 +13,9 @@
     <Match>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
+    <!-- Exclude unread field warnings for @Spy fields in Mockito tests -->
+    <Match>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+        <Source name="~.*Test\.java"/>
+    </Match>
 </FindBugsFilter>
