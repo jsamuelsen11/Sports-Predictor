@@ -2,6 +2,7 @@ package com.sportspredictor.repository;
 
 import com.sportspredictor.entity.Bet;
 import com.sportspredictor.entity.enums.BetStatus;
+import com.sportspredictor.entity.enums.BetType;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,4 +27,16 @@ public interface BetRepository extends JpaRepository<Bet, String> {
 
     /** Returns bets placed within the given time range (inclusive). */
     List<Bet> findByPlacedAtBetween(Instant start, Instant end);
+
+    /** Returns child bets belonging to a round-robin parent. */
+    List<Bet> findByParentBetId(String parentBetId);
+
+    /** Returns bets matching a specific type, status, and sport. */
+    List<Bet> findByBetTypeAndStatusAndSport(BetType betType, BetStatus status, String sport);
+
+    /** Returns settled bets within a time range. */
+    List<Bet> findByStatusInAndSettledAtBetween(List<BetStatus> statuses, Instant start, Instant end);
+
+    /** Returns bets by type and status. */
+    List<Bet> findByBetTypeAndStatus(BetType betType, BetStatus status);
 }
