@@ -23,4 +23,10 @@ public interface PredictionLogRepository extends JpaRepository<PredictionLog, St
 
     /** Returns predictions that have not yet been settled. */
     List<PredictionLog> findByActualOutcomeIsNull();
+
+    /** Returns all settled predictions (those with a known actual outcome). */
+    List<PredictionLog> findByActualOutcomeIsNotNull();
+
+    /** Returns settled predictions filtered by sport. */
+    List<PredictionLog> findBySportAndActualOutcomeIsNotNull(String sport);
 }
