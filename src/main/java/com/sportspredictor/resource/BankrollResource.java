@@ -88,8 +88,8 @@ public class BankrollResource {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
-            log.warn("Failed to serialize resource to JSON: {}", e.getMessage());
-            return "{}";
+            log.error("Failed to serialize resource to JSON: {}", e.getMessage());
+            throw new IllegalStateException("Resource serialization failed", e);
         }
     }
 }

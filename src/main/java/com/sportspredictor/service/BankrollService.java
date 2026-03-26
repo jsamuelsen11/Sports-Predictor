@@ -16,11 +16,13 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Manages bankroll lifecycle: status, deposits, withdrawals, and resets. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class BankrollService {
 
     private static final BigDecimal DEFAULT_STARTING_BALANCE = new BigDecimal("1000.00");

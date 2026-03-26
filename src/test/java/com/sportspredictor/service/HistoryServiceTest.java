@@ -188,5 +188,51 @@ class HistoryServiceTest {
             assertThat(result.pending()).isZero();
             assertThat(result.dailyProfitLoss()).isEqualByComparingTo("0.00");
         }
+
+        @Test
+        void aggregatesMixedBetStatuses() {
+            Bankroll bankroll = buildBankroll();
+            when(bankrollService.getActiveBankroll()).thenReturn(bankroll);
+
+            Bet won = buildBetWithPayout("b1", BetStatus.WON, "nba", new BigDecimal("100"), new BigDecimal("250"));
+            Bet lost = buildBetWithPayout("b2", BetStatus.LOST, "nfl", new BigDecimal("50"), null);
+            Bet pushed = buildBetWithPayout("b3", BetStatus.PUSHED, "mlb", new BigDecimal("25"), null);
+            Bet pending = buildBetWithPayout("b4", BetStatus.PENDING, "nba", new BigDecimal("75"), null);
+
+            when(betRepository.findByPlacedAtBetween(
+                            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                    .thenReturn(List.of(won, lost, pushed, pending));
+
+            DailyPerformanceResult result = historyService.getDailyPerformance();
+
+            assertThat(result.placed()).isEqualTo(4);
+            assertThat(result.pending()).isEqualTo(1);
+            assertThat(result.settled()).isEqualTo(3);
+            assertThat(result.wins()).isEqualTo(1);
+            assertThat(result.losses()).isEqualTo(1);
+            assertThat(result.pushes()).isEqualTo(1);
+            // WON: 250 - 100 = +150; LOST: -50; PUSHED: 0; PENDING: ignored
+            assertThat(result.dailyProfitLoss()).isEqualByComparingTo("100.00");
+        }
+    }
+
+    private static Bet buildBetWithPayout(
+            String id, BetStatus status, String sport, BigDecimal stake, BigDecimal actualPayout) {
+        Bankroll bankroll = buildBankroll();
+        return Bet.builder()
+                .id(id)
+                .bankroll(bankroll)
+                .betType(BetType.MONEYLINE)
+                .status(status)
+                .stake(stake)
+                .odds(new BigDecimal("1.909"))
+                .potentialPayout(new BigDecimal("190.90"))
+                .actualPayout(actualPayout)
+                .sport(sport)
+                .eventId("evt-1")
+                .description("Test bet")
+                .placedAt(Instant.parse("2026-03-25T12:00:00Z"))
+                .settledAt(status == BetStatus.PENDING ? null : Instant.parse("2026-03-25T22:00:00Z"))
+                .build();
     }
 }

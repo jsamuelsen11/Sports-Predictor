@@ -28,11 +28,13 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Handles bet settlement: single bets, parlays, and auto-settle via game results. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class SettlementService {
 
     private static final int SCALE = 2;
@@ -283,9 +285,9 @@ public class SettlementService {
             pendingBets = betRepository.findByStatus(BetStatus.PENDING);
         }
 
-        Map<String, List<Bet>> betsByEvent = pendingBets.stream()
+        Map<EventKey, List<Bet>> betsByEvent = pendingBets.stream()
                 .filter(b -> b.getBetType() != BetType.PARLAY)
-                .collect(Collectors.groupingBy(b -> b.getSport() + ":" + b.getEventId()));
+                .collect(Collectors.groupingBy(b -> new EventKey(b.getSport(), b.getEventId())));
 
         List<AutoSettledBet> settledBets = new ArrayList<>();
         int errors = 0;
@@ -293,10 +295,9 @@ public class SettlementService {
         int lost = 0;
         int pushed = 0;
 
-        for (Map.Entry<String, List<Bet>> entry : betsByEvent.entrySet()) {
-            String[] parts = entry.getKey().split(":");
-            String betSport = parts[0];
-            String eventId = parts[1];
+        for (Map.Entry<EventKey, List<Bet>> entry : betsByEvent.entrySet()) {
+            String betSport = entry.getKey().sport();
+            String eventId = entry.getKey().eventId();
             List<Bet> eventBets = entry.getValue();
 
             try {
@@ -410,4 +411,7 @@ public class SettlementService {
             default -> throw new IllegalArgumentException("Unexpected outcome: " + normalizedOutcome);
         };
     }
+
+    /** Structured key for grouping bets by sport and event. */
+    private record EventKey(String sport, String eventId) {}
 }

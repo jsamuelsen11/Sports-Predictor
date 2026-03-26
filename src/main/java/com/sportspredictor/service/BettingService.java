@@ -22,14 +22,18 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Handles bet placement (single and parlay) and bet cancellation. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class BettingService {
 
     private static final int SCALE = 2;
+    private static final String PARLAY_SPORT = "PARLAY";
+    private static final String PARLAY_EVENT_ID = "MULTI";
 
     private final BetRepository betRepository;
     private final BetLegRepository betLegRepository;
@@ -159,6 +163,7 @@ public class BettingService {
 
         String parlayDescription = description != null ? description : legs.size() + "-leg parlay";
 
+        // Parlay sport/eventId use sentinel values; individual events are on the legs.
         Bet bet = Bet.builder()
                 .bankroll(bankroll)
                 .betType(BetType.PARLAY)
@@ -166,8 +171,8 @@ public class BettingService {
                 .stake(stake.setScale(SCALE, RoundingMode.HALF_UP))
                 .odds(BigDecimal.valueOf(combinedDecimal).setScale(SCALE + 1, RoundingMode.HALF_UP))
                 .potentialPayout(potentialPayout)
-                .sport(legs.getFirst().sport())
-                .eventId(legs.getFirst().eventId())
+                .sport(PARLAY_SPORT)
+                .eventId(PARLAY_EVENT_ID)
                 .description(parlayDescription)
                 .placedAt(Instant.now())
                 .metadata(metadata)
