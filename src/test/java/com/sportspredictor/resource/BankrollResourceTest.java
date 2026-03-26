@@ -3,6 +3,8 @@ package com.sportspredictor.resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sportspredictor.service.AchievementService;
+import com.sportspredictor.service.BankrollRulesService;
 import com.sportspredictor.service.BankrollService;
 import com.sportspredictor.service.HistoryService;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
@@ -24,15 +26,21 @@ class BankrollResourceTest {
     private HistoryService historyService;
 
     @Mock
+    private BankrollRulesService bankrollRulesService;
+
+    @Mock
+    private AchievementService achievementService;
+
+    @Mock
     private ObjectMapper objectMapper;
 
     @InjectMocks
     private BankrollResource bankrollResource;
 
     @Test
-    void registersFourResources() {
+    void registersAllResources() {
         List<SyncResourceSpecification> resources = bankrollResource.bankrollResources();
 
-        assertThat(resources).hasSize(4);
+        assertThat(resources).hasSize(7);
     }
 }
