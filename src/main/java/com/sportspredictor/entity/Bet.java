@@ -70,4 +70,10 @@ public class Bet extends BaseEntity {
 
     @Column(name = "metadata")
     private String metadata;
+
+    @Column(name = "parent_bet_id")
+    private String parentBetId;
+
+    @Column(name = "expires_at", columnDefinition = "TEXT")
+    private Instant expiresAt;
 }

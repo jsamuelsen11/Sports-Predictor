@@ -23,4 +23,7 @@ public interface BankrollTransactionRepository extends JpaRepository<BankrollTra
 
     /** Returns transactions linked to the given bet. */
     List<BankrollTransaction> findByReferenceBetId(String referenceBetId);
+
+    /** Returns transactions for a bankroll within a time range. */
+    List<BankrollTransaction> findByBankrollIdAndCreatedAtBetween(String bankrollId, Instant start, Instant end);
 }

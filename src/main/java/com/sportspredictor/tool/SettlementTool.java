@@ -8,7 +8,9 @@ import com.sportspredictor.service.SettlementService.AutoSettleResult;
 import com.sportspredictor.service.SettlementService.LegSettlement;
 import com.sportspredictor.service.SettlementService.LegSettlementDetail;
 import com.sportspredictor.service.SettlementService.SettleBetResult;
+import com.sportspredictor.service.SettlementService.SettleFuturesResult;
 import com.sportspredictor.service.SettlementService.SettleParlayResult;
+import com.sportspredictor.service.SettlementService.VoidLegResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
@@ -124,6 +126,37 @@ public class SettlementTool {
                 r.errors(),
                 r.settledBets(),
                 r.summary());
+    }
+
+    /** Response for void_leg. */
+    public record VoidLegResponse(
+            String betId, int legNumber, double newPotentialPayout, int remainingLegs, String summary) {}
+
+    /** Response for settle_futures. */
+    public record SettleFuturesResponse(int totalFutures, int settled, int won, int lost, String summary) {}
+
+    /** Voids a single leg of a parlay (e.g., game cancelled). */
+    @Tool(
+            name = "void_leg",
+            description = "Void a single parlay leg (e.g., game cancelled)."
+                    + " Recalculates parlay odds with remaining legs")
+    public VoidLegResponse voidLeg(
+            @ToolParam(description = "Bet ID") String betId,
+            @ToolParam(description = "Leg number to void") int legNumber) {
+        VoidLegResult r = settlementService.voidLeg(betId, legNumber);
+        return new VoidLegResponse(
+                r.betId(), r.legNumber(), r.newPotentialPayout().doubleValue(), r.remainingLegs(), r.summary());
+    }
+
+    /** Settles futures bets at end of season/tournament. */
+    @Tool(
+            name = "settle_futures",
+            description = "Settle futures bets for a sport based on final outcome" + " (e.g., championship winner)")
+    public SettleFuturesResponse settleFutures(
+            @ToolParam(description = "Sport key") String sport,
+            @ToolParam(description = "Winning outcome (e.g., 'Chiefs', 'Celtics')") String outcome) {
+        SettleFuturesResult r = settlementService.settleFutures(sport, outcome);
+        return new SettleFuturesResponse(r.totalFutures(), r.settled(), r.won(), r.lost(), r.summary());
     }
 
     private List<LegSettlement> parseLegOutcomes(String json) {

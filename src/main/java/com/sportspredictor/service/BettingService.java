@@ -76,6 +76,53 @@ public class BettingService {
     /** Result of cancelling a bet. */
     public record CancelBetResult(String betId, BigDecimal refundedStake, BigDecimal balanceAfter, String summary) {}
 
+    /** Result of placing a teaser bet. */
+    public record PlaceTeaserResult(
+            String betId,
+            BigDecimal stake,
+            int legCount,
+            double teaserPoints,
+            int teaserOdds,
+            BigDecimal potentialPayout,
+            List<LegSummary> legs,
+            BigDecimal balanceAfter,
+            String summary) {}
+
+    /** Result of placing a round-robin bet. */
+    public record PlaceRoundRobinResult(
+            String parentBetId,
+            BigDecimal totalStake,
+            int totalCombinations,
+            int parlaySize,
+            BigDecimal stakePerCombo,
+            BigDecimal maxPotentialPayout,
+            List<String> subBetIds,
+            BigDecimal balanceAfter,
+            String summary) {}
+
+    /** Result of placing a futures bet. */
+    public record PlaceFuturesResult(
+            String betId,
+            String sport,
+            String eventId,
+            String selection,
+            int americanOdds,
+            BigDecimal stake,
+            BigDecimal potentialPayout,
+            String expiresAt,
+            BigDecimal balanceAfter,
+            String summary) {}
+
+    /** Result of editing a bet. */
+    public record EditBetResult(
+            String betId,
+            BigDecimal oldStake,
+            BigDecimal newStake,
+            BigDecimal stakeDelta,
+            BigDecimal newPotentialPayout,
+            BigDecimal balanceAfter,
+            String summary) {}
+
     /** Places a single bet, deducting the stake from the active bankroll. */
     public PlaceBetResult placeBet(
             String sport,
@@ -258,6 +305,384 @@ public class BettingService {
         log.info("Bet cancelled bet_id={} refund={}", betId, bet.getStake());
 
         return new CancelBetResult(betId, bet.getStake(), newBalance, summary);
+    }
+
+    /** Places a game prop bet. Same mechanics as moneyline with GAME_PROP type. */
+    public PlaceBetResult placeGamePropBet(
+            String sport, String eventId, String selection, int americanOdds, BigDecimal stake, String description) {
+        return placeBet(sport, eventId, "GAME_PROP", selection, americanOdds, stake, description, null);
+    }
+
+    /** Places a first-half bet. Same mechanics as moneyline with FIRST_HALF type. */
+    public PlaceBetResult placeFirstHalfBet(
+            String sport, String eventId, String selection, int americanOdds, BigDecimal stake, String description) {
+        return placeBet(sport, eventId, "FIRST_HALF", selection, americanOdds, stake, description, null);
+    }
+
+    /** Places a futures bet with an expiration date. */
+    public PlaceFuturesResult placeFuturesBet(
+            String sport,
+            String eventId,
+            String selection,
+            int americanOdds,
+            BigDecimal stake,
+            String description,
+            Instant expiresAt) {
+
+        validatePositiveStake(stake);
+        Bankroll bankroll = bankrollService.getActiveBankroll();
+        validateSufficientBalance(stake, bankroll);
+
+        double decimalOdds = OddsUtil.americanToDecimal(americanOdds);
+        BigDecimal potentialPayout = PayoutCalculator.totalReturn(stake, americanOdds);
+
+        Bet bet = Bet.builder()
+                .bankroll(bankroll)
+                .betType(BetType.FUTURES)
+                .status(BetStatus.PENDING)
+                .stake(stake.setScale(SCALE, RoundingMode.HALF_UP))
+                .odds(BigDecimal.valueOf(decimalOdds).setScale(SCALE + 1, RoundingMode.HALF_UP))
+                .potentialPayout(potentialPayout)
+                .sport(sport)
+                .eventId(eventId)
+                .description(description != null ? description : selection)
+                .placedAt(Instant.now())
+                .expiresAt(expiresAt)
+                .build();
+        betRepository.save(bet);
+
+        BigDecimal newBalance = deductStake(bankroll, stake, bet.getId());
+
+        String summary = String.format(
+                "Placed FUTURES bet: %s at %s odds ($%s to win $%s). Expires: %s. Balance: $%s",
+                selection,
+                formatAmericanOdds(americanOdds),
+                stake.setScale(SCALE, RoundingMode.HALF_UP),
+                potentialPayout.subtract(stake).setScale(SCALE, RoundingMode.HALF_UP),
+                expiresAt != null ? expiresAt.toString() : "end of season",
+                newBalance.setScale(SCALE, RoundingMode.HALF_UP));
+
+        log.info("Futures bet placed bet_id={} sport={} expires={}", bet.getId(), sport, expiresAt);
+
+        return new PlaceFuturesResult(
+                bet.getId(),
+                sport,
+                eventId,
+                selection,
+                americanOdds,
+                stake,
+                potentialPayout,
+                expiresAt != null ? expiresAt.toString() : null,
+                newBalance,
+                summary);
+    }
+
+    /** Places a teaser bet with adjusted spreads/totals at reduced odds. */
+    public PlaceTeaserResult placeTeaserBet(
+            List<ParlayLegInput> legs, BigDecimal stake, double teaserPoints, String description) {
+
+        if (legs == null || legs.size() < PayoutCalculator.MIN_PARLAY_LEGS) {
+            throw new IllegalArgumentException(
+                    "Teaser requires at least " + PayoutCalculator.MIN_PARLAY_LEGS + " legs");
+        }
+        validatePositiveStake(stake);
+        Bankroll bankroll = bankrollService.getActiveBankroll();
+        validateSufficientBalance(stake, bankroll);
+
+        int teaserOdds = PayoutCalculator.lookupTeaserOdds(legs.size(), teaserPoints);
+        BigDecimal teaserProfit = PayoutCalculator.teaserPayout(stake, legs.size(), teaserPoints);
+        BigDecimal potentialPayout = teaserProfit.add(stake);
+
+        double decimalOdds = OddsUtil.americanToDecimal(teaserOdds);
+        String teaserDescription =
+                description != null ? description : legs.size() + "-leg " + teaserPoints + "pt teaser";
+
+        Bet bet = Bet.builder()
+                .bankroll(bankroll)
+                .betType(BetType.TEASER)
+                .status(BetStatus.PENDING)
+                .stake(stake.setScale(SCALE, RoundingMode.HALF_UP))
+                .odds(BigDecimal.valueOf(decimalOdds).setScale(SCALE + 1, RoundingMode.HALF_UP))
+                .potentialPayout(potentialPayout)
+                .sport(PARLAY_SPORT)
+                .eventId(PARLAY_EVENT_ID)
+                .description(teaserDescription)
+                .placedAt(Instant.now())
+                .build();
+        betRepository.save(bet);
+
+        List<LegSummary> legSummaries = new ArrayList<>();
+        for (int i = 0; i < legs.size(); i++) {
+            ParlayLegInput legInput = legs.get(i);
+            BetLeg betLeg = BetLeg.builder()
+                    .bet(bet)
+                    .legNumber(i + 1)
+                    .selection(legInput.selection())
+                    .odds(BigDecimal.valueOf(OddsUtil.americanToDecimal(legInput.americanOdds()))
+                            .setScale(SCALE + 1, RoundingMode.HALF_UP))
+                    .status(BetLegStatus.PENDING)
+                    .eventId(legInput.eventId())
+                    .sport(legInput.sport())
+                    .build();
+            betLegRepository.save(betLeg);
+            legSummaries.add(new LegSummary(
+                    i + 1, legInput.sport(), legInput.eventId(), legInput.selection(), legInput.americanOdds()));
+        }
+
+        BigDecimal newBalance = deductStake(bankroll, stake, bet.getId());
+
+        String summary = String.format(
+                "Placed %d-leg %.1fpt teaser at %s odds ($%s to win $%s). Balance: $%s",
+                legs.size(),
+                teaserPoints,
+                formatAmericanOdds(teaserOdds),
+                stake.setScale(SCALE, RoundingMode.HALF_UP),
+                teaserProfit.setScale(SCALE, RoundingMode.HALF_UP),
+                newBalance.setScale(SCALE, RoundingMode.HALF_UP));
+
+        log.info("Teaser placed bet_id={} legs={} teaserPts={}", bet.getId(), legs.size(), teaserPoints);
+
+        return new PlaceTeaserResult(
+                bet.getId(),
+                stake,
+                legs.size(),
+                teaserPoints,
+                teaserOdds,
+                potentialPayout,
+                legSummaries,
+                newBalance,
+                summary);
+    }
+
+    /**
+     * Places a round-robin bet, generating all C(n,k) sub-parlays as child bets. The parent bet
+     * stores aggregate summary in metadata for top-level comparison.
+     */
+    public PlaceRoundRobinResult placeRoundRobinBet(
+            List<ParlayLegInput> legs, int parlaySize, BigDecimal stakePerCombo, String description) {
+
+        if (legs == null || legs.size() < parlaySize) {
+            throw new IllegalArgumentException(
+                    "Need at least " + parlaySize + " legs for a " + parlaySize + "-leg round-robin");
+        }
+        if (parlaySize < PayoutCalculator.MIN_PARLAY_LEGS) {
+            throw new IllegalArgumentException("Parlay size must be at least " + PayoutCalculator.MIN_PARLAY_LEGS);
+        }
+        validatePositiveStake(stakePerCombo);
+
+        int totalCombos = PayoutCalculator.roundRobinComboCount(legs.size(), parlaySize);
+        BigDecimal totalStake = stakePerCombo.multiply(BigDecimal.valueOf(totalCombos));
+
+        Bankroll bankroll = bankrollService.getActiveBankroll();
+        validateSufficientBalance(totalStake, bankroll);
+
+        // Create parent bet to hold the round-robin aggregate
+        String rrDescription = description != null
+                ? description
+                : String.format("%d-pick %d-leg round-robin (%d combos)", legs.size(), parlaySize, totalCombos);
+
+        Bet parentBet = Bet.builder()
+                .bankroll(bankroll)
+                .betType(BetType.ROUND_ROBIN)
+                .status(BetStatus.PENDING)
+                .stake(totalStake.setScale(SCALE, RoundingMode.HALF_UP))
+                .odds(BigDecimal.ONE)
+                .potentialPayout(BigDecimal.ZERO)
+                .sport(PARLAY_SPORT)
+                .eventId(PARLAY_EVENT_ID)
+                .description(rrDescription)
+                .placedAt(Instant.now())
+                .build();
+        betRepository.save(parentBet);
+
+        // Generate all C(n,k) sub-parlay combinations
+        List<List<ParlayLegInput>> combos = combinations(legs, parlaySize);
+        BigDecimal maxPotentialPayout = BigDecimal.ZERO;
+        List<String> subBetIds = new ArrayList<>();
+
+        for (List<ParlayLegInput> combo : combos) {
+            PlaceParlayResult sub = placeParlayBetInternal(combo, stakePerCombo, bankroll, parentBet.getId());
+            subBetIds.add(sub.betId());
+            maxPotentialPayout = maxPotentialPayout.add(sub.potentialPayout());
+        }
+
+        // Update parent metadata with aggregate summary
+        parentBet.setPotentialPayout(maxPotentialPayout);
+        parentBet.setMetadata(String.format(
+                "{\"totalStake\":%.2f,\"subParlayCount\":%d,\"parlaySize\":%d,\"stakePerCombo\":%.2f}",
+                totalStake.doubleValue(), totalCombos, parlaySize, stakePerCombo.doubleValue()));
+        betRepository.save(parentBet);
+
+        BigDecimal newBalance = deductStake(bankroll, totalStake, parentBet.getId());
+
+        String summary = String.format(
+                "Placed %d-pick %d-leg round-robin: %d sub-parlays at $%s each"
+                        + " (total $%s). Max payout: $%s. Balance: $%s",
+                legs.size(),
+                parlaySize,
+                totalCombos,
+                stakePerCombo.setScale(SCALE, RoundingMode.HALF_UP),
+                totalStake.setScale(SCALE, RoundingMode.HALF_UP),
+                maxPotentialPayout.setScale(SCALE, RoundingMode.HALF_UP),
+                newBalance.setScale(SCALE, RoundingMode.HALF_UP));
+
+        log.info(
+                "Round-robin placed parent_id={} combos={} total_stake={}", parentBet.getId(), totalCombos, totalStake);
+
+        return new PlaceRoundRobinResult(
+                parentBet.getId(),
+                totalStake,
+                totalCombos,
+                parlaySize,
+                stakePerCombo,
+                maxPotentialPayout,
+                subBetIds,
+                newBalance,
+                summary);
+    }
+
+    /** Edits a pending bet's stake. Only PENDING bets can be edited. */
+    public EditBetResult editBet(String betId, BigDecimal newStake) {
+        Bet bet = betRepository
+                .findById(betId)
+                .orElseThrow(() -> new IllegalArgumentException("Bet not found: " + betId));
+
+        if (bet.getStatus() != BetStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Cannot edit bet with status " + bet.getStatus().name() + " — only PENDING bets can be edited");
+        }
+
+        BigDecimal oldStake = bet.getStake();
+        if (newStake != null && newStake.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal stakeDelta = newStake.subtract(oldStake);
+            Bankroll bankroll = bet.getBankroll();
+
+            if (stakeDelta.compareTo(BigDecimal.ZERO) > 0) {
+                validateSufficientBalance(stakeDelta, bankroll);
+            }
+
+            // Adjust bankroll
+            BigDecimal newBalance = bankroll.getCurrentBalance().subtract(stakeDelta);
+            bankroll.setCurrentBalance(newBalance);
+            bankrollRepository.save(bankroll);
+
+            // Record transaction
+            TransactionType txnType = stakeDelta.compareTo(BigDecimal.ZERO) > 0
+                    ? TransactionType.BET_PLACED
+                    : TransactionType.BET_CANCELLED;
+            BankrollTransaction txn = BankrollTransaction.builder()
+                    .bankroll(bankroll)
+                    .type(txnType)
+                    .amount(stakeDelta.abs().setScale(SCALE, RoundingMode.HALF_UP))
+                    .balanceAfter(newBalance.setScale(SCALE, RoundingMode.HALF_UP))
+                    .referenceBetId(betId)
+                    .createdAt(Instant.now())
+                    .build();
+            transactionRepository.save(txn);
+
+            // Recalculate potential payout
+            int americanOdds = OddsUtil.decimalToAmerican(bet.getOdds().doubleValue());
+            BigDecimal newPotentialPayout = PayoutCalculator.totalReturn(newStake, americanOdds);
+
+            bet.setStake(newStake.setScale(SCALE, RoundingMode.HALF_UP));
+            bet.setPotentialPayout(newPotentialPayout);
+            betRepository.save(bet);
+
+            String summary = String.format(
+                    "Edited bet %s: stake $%s → $%s (delta $%s). New payout: $%s. Balance: $%s",
+                    betId,
+                    oldStake.setScale(SCALE, RoundingMode.HALF_UP),
+                    newStake.setScale(SCALE, RoundingMode.HALF_UP),
+                    stakeDelta.setScale(SCALE, RoundingMode.HALF_UP),
+                    newPotentialPayout.setScale(SCALE, RoundingMode.HALF_UP),
+                    newBalance.setScale(SCALE, RoundingMode.HALF_UP));
+
+            log.info("Bet edited bet_id={} old_stake={} new_stake={}", betId, oldStake, newStake);
+
+            return new EditBetResult(betId, oldStake, newStake, stakeDelta, newPotentialPayout, newBalance, summary);
+        }
+
+        throw new IllegalArgumentException("New stake must be positive");
+    }
+
+    /**
+     * Internal method to place a sub-parlay for round-robin without deducting stake (parent handles
+     * the bankroll deduction).
+     */
+    private PlaceParlayResult placeParlayBetInternal(
+            List<ParlayLegInput> legs, BigDecimal stake, Bankroll bankroll, String parentBetId) {
+
+        List<Integer> americanOddsList =
+                legs.stream().map(ParlayLegInput::americanOdds).toList();
+        BigDecimal parlayProfit = PayoutCalculator.parlayPayout(stake, americanOddsList);
+        BigDecimal potentialPayout = parlayProfit.add(stake);
+
+        double combinedDecimal = 1.0;
+        for (ParlayLegInput leg : legs) {
+            combinedDecimal *= OddsUtil.americanToDecimal(leg.americanOdds());
+        }
+        int combinedAmerican = OddsUtil.decimalToAmerican(combinedDecimal);
+
+        Bet bet = Bet.builder()
+                .bankroll(bankroll)
+                .betType(BetType.PARLAY)
+                .status(BetStatus.PENDING)
+                .stake(stake.setScale(SCALE, RoundingMode.HALF_UP))
+                .odds(BigDecimal.valueOf(combinedDecimal).setScale(SCALE + 1, RoundingMode.HALF_UP))
+                .potentialPayout(potentialPayout)
+                .sport(PARLAY_SPORT)
+                .eventId(PARLAY_EVENT_ID)
+                .description(legs.size() + "-leg sub-parlay")
+                .placedAt(Instant.now())
+                .parentBetId(parentBetId)
+                .build();
+        betRepository.save(bet);
+
+        List<LegSummary> legSummaries = new ArrayList<>();
+        for (int i = 0; i < legs.size(); i++) {
+            ParlayLegInput legInput = legs.get(i);
+            BetLeg betLeg = BetLeg.builder()
+                    .bet(bet)
+                    .legNumber(i + 1)
+                    .selection(legInput.selection())
+                    .odds(BigDecimal.valueOf(OddsUtil.americanToDecimal(legInput.americanOdds()))
+                            .setScale(SCALE + 1, RoundingMode.HALF_UP))
+                    .status(BetLegStatus.PENDING)
+                    .eventId(legInput.eventId())
+                    .sport(legInput.sport())
+                    .build();
+            betLegRepository.save(betLeg);
+            legSummaries.add(new LegSummary(
+                    i + 1, legInput.sport(), legInput.eventId(), legInput.selection(), legInput.americanOdds()));
+        }
+
+        return new PlaceParlayResult(
+                bet.getId(),
+                stake,
+                BigDecimal.valueOf(combinedDecimal),
+                combinedAmerican,
+                potentialPayout,
+                legSummaries,
+                bankroll.getCurrentBalance(),
+                "Sub-parlay placed");
+    }
+
+    private static <T> List<List<T>> combinations(List<T> items, int k) {
+        List<List<T>> result = new ArrayList<>();
+        combinationsHelper(items, k, 0, new ArrayList<>(), result);
+        return result;
+    }
+
+    private static <T> void combinationsHelper(List<T> items, int k, int start, List<T> current, List<List<T>> result) {
+        if (current.size() == k) {
+            result.add(new ArrayList<>(current));
+            return;
+        }
+        for (int i = start; i < items.size(); i++) {
+            current.add(items.get(i));
+            combinationsHelper(items, k, i + 1, current, result);
+            current.remove(current.size() - 1);
+        }
     }
 
     private BigDecimal deductStake(Bankroll bankroll, BigDecimal stake, String betId) {

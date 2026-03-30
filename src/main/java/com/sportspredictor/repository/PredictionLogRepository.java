@@ -29,4 +29,7 @@ public interface PredictionLogRepository extends JpaRepository<PredictionLog, St
 
     /** Returns settled predictions filtered by sport. */
     List<PredictionLog> findBySportAndActualOutcomeIsNotNull(String sport);
+
+    /** Returns predictions for a sport within a date range. */
+    List<PredictionLog> findBySportAndCreatedAtBetween(String sport, Instant start, Instant end);
 }

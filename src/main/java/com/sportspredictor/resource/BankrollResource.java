@@ -2,6 +2,8 @@ package com.sportspredictor.resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sportspredictor.service.AchievementService;
+import com.sportspredictor.service.BankrollRulesService;
 import com.sportspredictor.service.BankrollService;
 import com.sportspredictor.service.HistoryService;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
@@ -20,12 +22,21 @@ public class BankrollResource {
 
     private final BankrollService bankrollService;
     private final HistoryService historyService;
+    private final BankrollRulesService bankrollRulesService;
+    private final AchievementService achievementService;
     private final ObjectMapper objectMapper;
 
-    /** Registers the four bankroll:// resources. */
+    /** Registers the bankroll:// resources. */
     @Bean
     public List<SyncResourceSpecification> bankrollResources() {
-        return List.of(statusResource(), pendingBetsResource(), todayResource(), historySummaryResource());
+        return List.of(
+                statusResource(),
+                pendingBetsResource(),
+                todayResource(),
+                historySummaryResource(),
+                rulesResource(),
+                achievementsResource(),
+                seasonsResource());
     }
 
     private SyncResourceSpecification statusResource() {
@@ -81,6 +92,48 @@ public class BankrollResource {
             var analytics = historyService.getBankrollAnalytics();
             return new McpSchema.ReadResourceResult(
                     List.of(new McpSchema.TextResourceContents(request.uri(), "application/json", toJson(analytics))));
+        });
+    }
+
+    private SyncResourceSpecification rulesResource() {
+        var resource = new McpSchema.Resource(
+                "bankroll://rules",
+                "Bankroll Rules",
+                "Current bankroll rules: max bet, daily limits, stop-loss",
+                "application/json",
+                null);
+        return new SyncResourceSpecification(resource, (exchange, request) -> {
+            var rules = bankrollRulesService.getDailyLimitsStatus();
+            return new McpSchema.ReadResourceResult(
+                    List.of(new McpSchema.TextResourceContents(request.uri(), "application/json", toJson(rules))));
+        });
+    }
+
+    private SyncResourceSpecification achievementsResource() {
+        var resource = new McpSchema.Resource(
+                "bankroll://achievements",
+                "Achievements",
+                "Unlocked milestones and progress toward next ones",
+                "application/json",
+                null);
+        return new SyncResourceSpecification(resource, (exchange, request) -> {
+            var achievements = achievementService.getAchievements();
+            return new McpSchema.ReadResourceResult(List.of(
+                    new McpSchema.TextResourceContents(request.uri(), "application/json", toJson(achievements))));
+        });
+    }
+
+    private SyncResourceSpecification seasonsResource() {
+        var resource = new McpSchema.Resource(
+                "bankroll://seasons",
+                "Bankroll Seasons",
+                "List of archived bankroll seasons with final stats",
+                "application/json",
+                null);
+        return new SyncResourceSpecification(resource, (exchange, request) -> {
+            var seasons = java.util.Map.of("message", "Use reset_bankroll to archive and start a new season");
+            return new McpSchema.ReadResourceResult(
+                    List.of(new McpSchema.TextResourceContents(request.uri(), "application/json", toJson(seasons))));
         });
     }
 

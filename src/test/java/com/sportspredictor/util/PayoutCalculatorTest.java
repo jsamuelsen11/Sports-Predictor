@@ -230,4 +230,137 @@ class PayoutCalculatorTest {
                     .isThrownBy(() -> PayoutCalculator.settleBet(BigDecimal.ZERO, -110, "WON"));
         }
     }
+
+    /** Tests for {@link PayoutCalculator#teaserPayout(BigDecimal, int, double)}. */
+    @Nested
+    class TeaserPayout {
+
+        @Test
+        void twoLeg6ptAt100() {
+            // 2-leg 6pt -> -110 odds -> profit = $90.91
+            BigDecimal result = PayoutCalculator.teaserPayout(HUNDRED, 2, 6.0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("90.91"));
+        }
+
+        @Test
+        void twoLeg7ptAt100() {
+            // 2-leg 7pt -> -130 odds -> profit = $76.92
+            BigDecimal result = PayoutCalculator.teaserPayout(HUNDRED, 2, 7.0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("76.92"));
+        }
+
+        @Test
+        void threeLeg6ptAt100() {
+            // 3-leg 6pt -> +150 odds -> profit = $150.00
+            BigDecimal result = PayoutCalculator.teaserPayout(HUNDRED, 3, 6.0);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("150.00"));
+        }
+
+        @Test
+        void rejectsSingleLeg() {
+            assertThatIllegalArgumentException().isThrownBy(() -> PayoutCalculator.teaserPayout(HUNDRED, 1, 6.0));
+        }
+    }
+
+    /** Tests for {@link PayoutCalculator#roundRobinPayouts(BigDecimal, List, int)}. */
+    @Nested
+    class RoundRobinPayouts {
+
+        @Test
+        void threePicksTwoLegProducesThreeCombinations() {
+            // C(3,2) = 3 combinations
+            List<BigDecimal> payouts = PayoutCalculator.roundRobinPayouts(HUNDRED, List.of(-110, -110, -110), 2);
+            assertThat(payouts).hasSize(3);
+        }
+
+        @Test
+        void fourPicksTwoLegProducesSixCombinations() {
+            // C(4,2) = 6 combinations
+            List<BigDecimal> payouts = PayoutCalculator.roundRobinPayouts(HUNDRED, List.of(-110, -110, -110, -110), 2);
+            assertThat(payouts).hasSize(6);
+        }
+
+        @Test
+        void rejectsParlaySize1() {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> PayoutCalculator.roundRobinPayouts(HUNDRED, List.of(-110, -110), 1));
+        }
+
+        @Test
+        void rejectsInsufficientLegs() {
+            // parlaySize=3 but only 2 legs provided
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> PayoutCalculator.roundRobinPayouts(HUNDRED, List.of(-110, -110), 3));
+        }
+    }
+
+    /** Tests for {@link PayoutCalculator#roundRobinComboCount(int, int)}. */
+    @Nested
+    class RoundRobinComboCount {
+
+        @Test
+        void c4choose2equals6() {
+            assertThat(PayoutCalculator.roundRobinComboCount(4, 2)).isEqualTo(6);
+        }
+
+        @Test
+        void c3choose2equals3() {
+            assertThat(PayoutCalculator.roundRobinComboCount(3, 2)).isEqualTo(3);
+        }
+
+        @Test
+        void c5choose3equals10() {
+            assertThat(PayoutCalculator.roundRobinComboCount(5, 3)).isEqualTo(10);
+        }
+
+        @Test
+        void returnsZeroForInvalidInputs() {
+            // parlaySize > totalSelections
+            assertThat(PayoutCalculator.roundRobinComboCount(2, 3)).isEqualTo(0);
+            // parlaySize < MIN_PARLAY_LEGS
+            assertThat(PayoutCalculator.roundRobinComboCount(4, 1)).isEqualTo(0);
+        }
+    }
+
+    /** Tests verifying gameProp and firstHalf delegate to moneyline. */
+    @Nested
+    class GamePropAndFirstHalfPayout {
+
+        @Test
+        void gamePropMatchesMoneyline() {
+            assertThat(PayoutCalculator.gamePropPayout(HUNDRED, 200))
+                    .isEqualByComparingTo(PayoutCalculator.moneylinePayout(HUNDRED, 200));
+        }
+
+        @Test
+        void firstHalfMatchesMoneyline() {
+            assertThat(PayoutCalculator.firstHalfPayout(HUNDRED, -130))
+                    .isEqualByComparingTo(PayoutCalculator.moneylinePayout(HUNDRED, -130));
+        }
+    }
+
+    /** Tests for {@link PayoutCalculator#lookupTeaserOdds(int, double)}. */
+    @Nested
+    class LookupTeaserOdds {
+
+        @Test
+        void twoLeg6ptReturnsNeg110() {
+            assertThat(PayoutCalculator.lookupTeaserOdds(2, 6.0)).isEqualTo(-110);
+        }
+
+        @Test
+        void twoLeg6pt5ReturnsNeg120() {
+            assertThat(PayoutCalculator.lookupTeaserOdds(2, 6.5)).isEqualTo(-120);
+        }
+
+        @Test
+        void twoLeg7ptReturnsNeg130() {
+            assertThat(PayoutCalculator.lookupTeaserOdds(2, 7.0)).isEqualTo(-130);
+        }
+
+        @Test
+        void threeLeg6ptReturnsPlus150() {
+            assertThat(PayoutCalculator.lookupTeaserOdds(3, 6.0)).isEqualTo(150);
+        }
+    }
 }

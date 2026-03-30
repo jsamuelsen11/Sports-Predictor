@@ -369,6 +369,105 @@ public class SettlementService {
                 summary);
     }
 
+    /** Result of voiding a leg. */
+    public record VoidLegResult(
+            String betId, int legNumber, BigDecimal newPotentialPayout, int remainingLegs, String summary) {}
+
+    /** Result of settling futures. */
+    public record SettleFuturesResult(int totalFutures, int settled, int won, int lost, String summary) {}
+
+    /**
+     * Voids a single leg of a parlay (e.g., game cancelled). Recalculates parlay odds
+     * with remaining legs and updates potential payout.
+     */
+    public VoidLegResult voidLeg(String betId, int legNumber) {
+        Bet bet = betRepository
+                .findById(betId)
+                .orElseThrow(() -> new IllegalArgumentException("Bet not found: " + betId));
+
+        if (bet.getStatus() != BetStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Cannot void leg on bet with status " + bet.getStatus().name());
+        }
+
+        List<BetLeg> legs = betLegRepository.findByBetId(betId);
+        BetLeg targetLeg = legs.stream()
+                .filter(l -> l.getLegNumber() == legNumber)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Leg " + legNumber + " not found on bet " + betId));
+
+        if (targetLeg.getStatus() != BetLegStatus.PENDING) {
+            throw new IllegalStateException("Leg " + legNumber + " already settled: " + targetLeg.getStatus());
+        }
+
+        targetLeg.setStatus(BetLegStatus.VOID);
+        targetLeg.setResultDetail("VOIDED");
+        betLegRepository.save(targetLeg);
+
+        // Recalculate odds without voided leg
+        double newCombinedDecimal = 1.0;
+        int remainingLegs = 0;
+        for (BetLeg leg : legs) {
+            if (leg.getStatus() != BetLegStatus.VOID) {
+                newCombinedDecimal *= leg.getOdds().doubleValue();
+                remainingLegs++;
+            }
+        }
+
+        BigDecimal newPotentialPayout =
+                bet.getStake().multiply(BigDecimal.valueOf(newCombinedDecimal)).setScale(SCALE, RoundingMode.HALF_UP);
+        bet.setOdds(BigDecimal.valueOf(newCombinedDecimal).setScale(SCALE + 1, RoundingMode.HALF_UP));
+        bet.setPotentialPayout(newPotentialPayout);
+        betRepository.save(bet);
+
+        log.info("Voided leg {} on bet_id={}, {} legs remaining", legNumber, betId, remainingLegs);
+
+        return new VoidLegResult(
+                betId,
+                legNumber,
+                newPotentialPayout,
+                remainingLegs,
+                String.format(
+                        "Voided leg %d. %d legs remaining. New potential payout: $%s",
+                        legNumber, remainingLegs, newPotentialPayout));
+    }
+
+    /** Settles all FUTURES bets for a sport matching the given outcome. */
+    public SettleFuturesResult settleFutures(String sport, String outcome) {
+        List<Bet> futuresBets = betRepository.findByBetTypeAndStatusAndSport(BetType.FUTURES, BetStatus.PENDING, sport);
+
+        int won = 0;
+        int lost = 0;
+
+        for (Bet bet : futuresBets) {
+            String desc = bet.getDescription().toLowerCase(Locale.ROOT);
+            String outcomeNorm = outcome.toLowerCase(Locale.ROOT);
+
+            boolean isWinner = desc.contains(outcomeNorm);
+            String result = isWinner ? "WON" : "LOST";
+
+            try {
+                settleBet(bet.getId(), result);
+                if (isWinner) {
+                    won++;
+                } else {
+                    lost++;
+                }
+            } catch (Exception e) {
+                log.warn("Error settling futures bet_id={}: {}", bet.getId(), e.getMessage());
+            }
+        }
+
+        return new SettleFuturesResult(
+                futuresBets.size(),
+                won + lost,
+                won,
+                lost,
+                String.format(
+                        "Settled %d futures for %s (outcome: %s). %d won, %d lost.",
+                        won + lost, sport, outcome, won, lost));
+    }
+
     private String determineOutcome(Bet bet, GameResult gameResult) {
         String selection = bet.getDescription().toLowerCase(Locale.ROOT);
 
