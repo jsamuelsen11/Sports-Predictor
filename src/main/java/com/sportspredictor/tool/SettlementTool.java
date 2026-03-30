@@ -148,6 +148,31 @@ public class SettlementTool {
                 r.betId(), r.legNumber(), r.newPotentialPayout().doubleValue(), r.remainingLegs(), r.summary());
     }
 
+    /** Settles a same-game parlay by providing the outcome for each leg. */
+    @Tool(
+            name = "settle_sgp",
+            description = "Settle a same-game parlay (SGP) by providing outcome for each leg."
+                    + " Same mechanics as settle_parlay but for SGP bets")
+    public SettleParlayResponse settleSgp(
+            @ToolParam(description = "SGP bet ID to settle") String betId,
+            @ToolParam(
+                            description = "JSON array of leg outcomes,"
+                                    + " each with: legNumber (int), outcome (WON/LOST/PUSH),"
+                                    + " resultDetail (string, optional)")
+                    String legOutcomesJson) {
+
+        List<LegSettlement> legOutcomes = parseLegOutcomes(legOutcomesJson);
+        SettleParlayResult r = settlementService.settleSgp(betId, legOutcomes);
+        return new SettleParlayResponse(
+                r.betId(),
+                r.newStatus(),
+                r.stake().doubleValue(),
+                r.payout().doubleValue(),
+                r.legs(),
+                r.balanceAfter().doubleValue(),
+                r.summary());
+    }
+
     /** Settles futures bets at end of season/tournament. */
     @Tool(
             name = "settle_futures",

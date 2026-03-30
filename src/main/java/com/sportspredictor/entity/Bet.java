@@ -76,4 +76,13 @@ public class Bet extends BaseEntity {
 
     @Column(name = "expires_at", columnDefinition = "TEXT")
     private Instant expiresAt;
+
+    @Column(name = "cash_out_amount")
+    private BigDecimal cashOutAmount;
+
+    @Column(name = "cashed_out_at", columnDefinition = "TEXT")
+    private Instant cashedOutAt;
+
+    @Column(name = "is_live")
+    private boolean isLive;
 }

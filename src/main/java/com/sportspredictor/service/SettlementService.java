@@ -432,6 +432,124 @@ public class SettlementService {
                         legNumber, remainingLegs, newPotentialPayout));
     }
 
+    /** Settles a same-game parlay. Same mechanics as regular parlay settlement. */
+    public SettleParlayResult settleSgp(String betId, List<LegSettlement> legOutcomes) {
+        Bet bet = betRepository
+                .findById(betId)
+                .orElseThrow(() -> new IllegalArgumentException("Bet not found: " + betId));
+
+        if (bet.getBetType() != BetType.SGP) {
+            throw new IllegalArgumentException("Bet " + betId + " is not an SGP");
+        }
+
+        // Reuse parlay settlement logic (SGP settles identically)
+        // Temporarily set type to allow settlement, then restore
+        return settleMultiLegBet(bet, legOutcomes);
+    }
+
+    /** Common settlement logic for multi-leg bets (parlay, SGP, teaser). */
+    private SettleParlayResult settleMultiLegBet(Bet bet, List<LegSettlement> legOutcomes) {
+        if (bet.getStatus() != BetStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Cannot settle bet with status " + bet.getStatus().name());
+        }
+
+        List<BetLeg> legs = betLegRepository.findByBetId(bet.getId()).stream()
+                .sorted(Comparator.comparingInt(BetLeg::getLegNumber))
+                .toList();
+
+        List<LegSettlementDetail> legDetails = new ArrayList<>();
+        boolean anyLost = false;
+        boolean allPushed = true;
+
+        for (BetLeg leg : legs) {
+            LegSettlement legOutcome = legOutcomes.stream()
+                    .filter(lo -> lo.legNumber() == leg.getLegNumber())
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Missing outcome for leg " + leg.getLegNumber()));
+
+            String normalizedOutcome = normalizeOutcome(legOutcome.outcome());
+            BetLegStatus legStatus = legOutcomeToStatus(normalizedOutcome);
+
+            final String previousStatus = leg.getStatus().name();
+            leg.setStatus(legStatus);
+            if (legOutcome.resultDetail() != null) {
+                leg.setResultDetail(legOutcome.resultDetail());
+            }
+            betLegRepository.save(leg);
+
+            legDetails.add(new LegSettlementDetail(
+                    leg.getLegNumber(),
+                    leg.getSelection(),
+                    previousStatus,
+                    legStatus.name(),
+                    legOutcome.resultDetail()));
+
+            if (legStatus == BetLegStatus.LOST) {
+                anyLost = true;
+                allPushed = false;
+            } else if (legStatus == BetLegStatus.WON) {
+                allPushed = false;
+            }
+        }
+
+        BetStatus parlayStatus;
+        BigDecimal actualPayout;
+        BigDecimal creditAmount;
+        TransactionType txnType;
+
+        if (anyLost) {
+            parlayStatus = BetStatus.LOST;
+            actualPayout = BigDecimal.ZERO.setScale(SCALE, RoundingMode.HALF_UP);
+            creditAmount = BigDecimal.ZERO;
+            txnType = TransactionType.BET_LOST;
+        } else if (allPushed) {
+            parlayStatus = BetStatus.PUSHED;
+            actualPayout = bet.getStake();
+            creditAmount = bet.getStake();
+            txnType = TransactionType.BET_PUSH;
+        } else {
+            parlayStatus = BetStatus.WON;
+            // For SGP, use the pre-adjusted odds stored on the bet
+            actualPayout = bet.getStake().multiply(bet.getOdds()).setScale(SCALE, RoundingMode.HALF_UP);
+            creditAmount = actualPayout;
+            txnType = TransactionType.BET_WON;
+        }
+
+        bet.setStatus(parlayStatus);
+        bet.setActualPayout(actualPayout);
+        bet.setSettledAt(Instant.now());
+        betRepository.save(bet);
+
+        Bankroll bankroll = bet.getBankroll();
+        BigDecimal newBalance = bankroll.getCurrentBalance().add(creditAmount);
+        bankroll.setCurrentBalance(newBalance);
+        bankrollRepository.save(bankroll);
+
+        BankrollTransaction txn = BankrollTransaction.builder()
+                .bankroll(bankroll)
+                .type(txnType)
+                .amount(creditAmount.setScale(SCALE, RoundingMode.HALF_UP))
+                .balanceAfter(newBalance.setScale(SCALE, RoundingMode.HALF_UP))
+                .referenceBetId(bet.getId())
+                .createdAt(Instant.now())
+                .build();
+        transactionRepository.save(txn);
+
+        String summary = String.format(
+                "Settled %d-leg %s as %s. Payout: $%s. Balance: $%s",
+                legs.size(),
+                bet.getBetType().name(),
+                parlayStatus.name(),
+                actualPayout.setScale(SCALE, RoundingMode.HALF_UP),
+                newBalance.setScale(SCALE, RoundingMode.HALF_UP));
+
+        log.info("{} settled bet_id={} status={} payout={}", bet.getBetType(), bet.getId(), parlayStatus, actualPayout);
+
+        return new SettleParlayResult(
+                bet.getId(), parlayStatus.name(), bet.getStake(), actualPayout, legDetails, newBalance, summary);
+    }
+
     /** Settles all FUTURES bets for a sport matching the given outcome. */
     public SettleFuturesResult settleFutures(String sport, String outcome) {
         List<Bet> futuresBets = betRepository.findByBetTypeAndStatusAndSport(BetType.FUTURES, BetStatus.PENDING, sport);

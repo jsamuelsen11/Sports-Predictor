@@ -8,5 +8,6 @@ public enum TransactionType {
     BET_WON,
     BET_LOST,
     BET_PUSH,
-    BET_CANCELLED
+    BET_CANCELLED,
+    CASH_OUT
 }

@@ -53,4 +53,7 @@ public class BetLeg extends BaseEntity {
 
     @Column(name = "result_detail")
     private String resultDetail;
+
+    @Column(name = "correlation_group")
+    private String correlationGroup;
 }

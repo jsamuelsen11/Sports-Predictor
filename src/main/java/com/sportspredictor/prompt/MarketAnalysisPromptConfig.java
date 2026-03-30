@@ -8,13 +8,13 @@ import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Registers Phase 2 MCP prompt templates: weather, sharp money, props, parlay optimizer. */
+/** Registers MCP prompt templates for market analysis: weather, sharp money, props, parlay optimizer. */
 @Configuration
-public class Phase2PromptConfig {
+public class MarketAnalysisPromptConfig {
 
-    /** Registers all Phase 2 prompt templates. */
+    /** Registers market analysis prompt templates. */
     @Bean
-    public List<SyncPromptSpecification> phase2Prompts() {
+    public List<SyncPromptSpecification> marketAnalysisPrompts() {
         return List.of(weatherImpactPrompt(), sharpMoneyPrompt(), propBuilderPrompt(), parlayOptimizerPrompt());
     }
 

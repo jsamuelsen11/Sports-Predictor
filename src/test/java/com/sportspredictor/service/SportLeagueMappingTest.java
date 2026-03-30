@@ -61,8 +61,8 @@ class SportLeagueMappingTest {
     class AllLeagues {
 
         @Test
-        void returnsTenLeagues() {
-            assertThat(mapping.allLeagues()).hasSize(10);
+        void returnsAllLeagues() {
+            assertThat(mapping.allLeagues()).hasSize(13);
         }
 
         @Test
@@ -70,7 +70,7 @@ class SportLeagueMappingTest {
             var keys = mapping.allLeagues().stream()
                     .map(SportLeagueMapping.LeagueInfo::key)
                     .toList();
-            assertThat(keys).contains("nfl", "nba", "mlb", "nhl", "epl");
+            assertThat(keys).contains("nfl", "nba", "mlb", "nhl", "epl", "mma", "golf", "tennis");
         }
     }
 }
