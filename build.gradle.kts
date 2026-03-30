@@ -37,6 +37,9 @@ dependencies {
     // Spring AI MCP server
     implementation(libs.spring.ai.starter.mcp.server.webmvc)
 
+    // Environment
+    implementation(libs.spring.dotenv)
+
     // Database
     runtimeOnly(libs.sqlite.jdbc)
     runtimeOnly(libs.hibernate.community.dialects)
