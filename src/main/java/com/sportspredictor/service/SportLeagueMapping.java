@@ -37,7 +37,13 @@ public class SportLeagueMapping {
             Map.entry(
                     "ucl",
                     new LeagueInfo(
-                            "ucl", "soccer", "uefa.champions", "soccer_uefa_champs_league", "UEFA Champions League")));
+                            "ucl", "soccer", "uefa.champions", "soccer_uefa_champs_league", "UEFA Champions League")),
+            // MMA/UFC
+            Map.entry("mma", new LeagueInfo("mma", "mma", "ufc", "mma_mixed_martial_arts", "UFC/MMA")),
+            // Golf — PGA
+            Map.entry("golf", new LeagueInfo("golf", "golf", "pga", "golf_masters_tournament_winner", "PGA Golf")),
+            // Tennis — ATP
+            Map.entry("tennis", new LeagueInfo("tennis", "tennis", "atp", "tennis_atp_us_open", "ATP Tennis")));
 
     /**
      * Resolves a user-facing sport key to API identifiers.

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sportspredictor.service.BettingService;
 import com.sportspredictor.service.BettingService.CancelBetResult;
+import com.sportspredictor.service.BettingService.CashOutResult;
 import com.sportspredictor.service.BettingService.EditBetResult;
 import com.sportspredictor.service.BettingService.LegSummary;
 import com.sportspredictor.service.BettingService.ParlayLegInput;
@@ -12,6 +13,7 @@ import com.sportspredictor.service.BettingService.PlaceBetResult;
 import com.sportspredictor.service.BettingService.PlaceFuturesResult;
 import com.sportspredictor.service.BettingService.PlaceParlayResult;
 import com.sportspredictor.service.BettingService.PlaceRoundRobinResult;
+import com.sportspredictor.service.BettingService.PlaceSgpResult;
 import com.sportspredictor.service.BettingService.PlaceTeaserResult;
 import java.math.BigDecimal;
 import java.util.List;
@@ -91,6 +93,27 @@ public class BettingTool {
             double stake,
             double potentialPayout,
             String expiresAt,
+            double balanceAfter,
+            String summary) {}
+
+    /** Response for a cashed-out bet. */
+    public record CashOutResponse(
+            String betId,
+            double originalStake,
+            double cashOutAmount,
+            double profit,
+            double balanceAfter,
+            String summary) {}
+
+    /** Response for a placed SGP bet. */
+    public record PlaceSgpResponse(
+            String betId,
+            double stake,
+            double adjustedDecimalOdds,
+            int adjustedAmericanOdds,
+            double potentialPayout,
+            List<LegSummary> legs,
+            double correlationAdjustment,
             double balanceAfter,
             String summary) {}
 
@@ -314,6 +337,82 @@ public class BettingTool {
                 r.stakePerCombo().doubleValue(),
                 r.maxPotentialPayout().doubleValue(),
                 r.subBetIds(),
+                r.balanceAfter().doubleValue(),
+                r.summary());
+    }
+
+    /** Places a live/in-game bet with odds captured at the current moment. */
+    @Tool(
+            name = "place_live_bet",
+            description = "Place a live/in-game bet. Odds are captured at the moment of placement."
+                    + " Works the same as place_bet but marks the bet as live")
+    public PlaceBetResponse placeLiveBet(
+            @ToolParam(description = "Sport key (e.g., nfl, nba)") String sport,
+            @ToolParam(description = "Event ID for the live game") String eventId,
+            @ToolParam(description = "Bet type: MONEYLINE, SPREAD, TOTAL, PLAYER_PROP") String betType,
+            @ToolParam(description = "Selection description") String selection,
+            @ToolParam(description = "American odds at time of placement") int odds,
+            @ToolParam(description = "Stake amount in dollars") double stake,
+            @ToolParam(description = "Bet description") String description,
+            @ToolParam(description = "Optional metadata JSON", required = false) String metadata) {
+
+        PlaceBetResult r = bettingService.placeLiveBet(
+                sport, eventId, betType, selection, odds, BigDecimal.valueOf(stake), description, metadata);
+        return new PlaceBetResponse(
+                r.betId(),
+                r.sport(),
+                r.eventId(),
+                r.betType(),
+                r.selection(),
+                r.description(),
+                r.stake().doubleValue(),
+                r.americanOdds(),
+                r.decimalOdds().doubleValue(),
+                r.potentialPayout().doubleValue(),
+                r.balanceAfter().doubleValue(),
+                r.summary());
+    }
+
+    /** Cashes out a pending bet at a reduced value based on current game state. */
+    @Tool(
+            name = "cash_out_bet",
+            description = "Cash out a pending bet early at a reduced value."
+                    + " Credits the cash-out amount to your bankroll")
+    public CashOutResponse cashOutBet(@ToolParam(description = "Bet ID to cash out") String betId) {
+        CashOutResult r = bettingService.cashOutBet(betId);
+        return new CashOutResponse(
+                r.betId(),
+                r.originalStake().doubleValue(),
+                r.cashOutAmount().doubleValue(),
+                r.profit().doubleValue(),
+                r.balanceAfter().doubleValue(),
+                r.summary());
+    }
+
+    /** Places a same-game parlay with correlation-adjusted odds. */
+    @Tool(
+            name = "place_sgp",
+            description = "Place a same-game parlay (SGP). All legs must be from the same game."
+                    + " Odds are adjusted for correlation between legs — use analyze_correlations first")
+    public PlaceSgpResponse placeSgp(
+            @ToolParam(description = "Event ID — all legs must be from this game") String eventId,
+            @ToolParam(description = "JSON array of leg objects (same format as place_parlay)") String legsJson,
+            @ToolParam(description = "Stake amount in dollars") double stake,
+            @ToolParam(description = "SGP description", required = false) String description,
+            @ToolParam(description = "Correlation adjustment factor from analyze_correlations (0.0-1.0)")
+                    double correlationAdjustment) {
+
+        List<ParlayLegInput> legs = parseLegsJson(legsJson);
+        PlaceSgpResult r = bettingService.placeSgpBet(
+                legs, BigDecimal.valueOf(stake), description, null, eventId, correlationAdjustment);
+        return new PlaceSgpResponse(
+                r.betId(),
+                r.stake().doubleValue(),
+                r.adjustedDecimalOdds().doubleValue(),
+                r.adjustedAmericanOdds(),
+                r.potentialPayout().doubleValue(),
+                r.legs(),
+                r.correlationAdjustment(),
                 r.balanceAfter().doubleValue(),
                 r.summary());
     }

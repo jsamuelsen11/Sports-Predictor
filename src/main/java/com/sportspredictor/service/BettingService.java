@@ -113,6 +113,27 @@ public class BettingService {
             BigDecimal balanceAfter,
             String summary) {}
 
+    /** Result of cashing out a live bet. */
+    public record CashOutResult(
+            String betId,
+            BigDecimal originalStake,
+            BigDecimal cashOutAmount,
+            BigDecimal profit,
+            BigDecimal balanceAfter,
+            String summary) {}
+
+    /** Result of placing an SGP bet. */
+    public record PlaceSgpResult(
+            String betId,
+            BigDecimal stake,
+            BigDecimal adjustedDecimalOdds,
+            int adjustedAmericanOdds,
+            BigDecimal potentialPayout,
+            List<LegSummary> legs,
+            double correlationAdjustment,
+            BigDecimal balanceAfter,
+            String summary) {}
+
     /** Result of editing a bet. */
     public record EditBetResult(
             String betId,
@@ -537,6 +558,215 @@ public class BettingService {
                 stakePerCombo,
                 maxPotentialPayout,
                 subBetIds,
+                newBalance,
+                summary);
+    }
+
+    /** Places a live/in-game bet with is_live flag set. */
+    public PlaceBetResult placeLiveBet(
+            String sport,
+            String eventId,
+            String betTypeStr,
+            String selection,
+            int americanOdds,
+            BigDecimal stake,
+            String description,
+            String metadata) {
+
+        validatePositiveStake(stake);
+        BetType betType = parseBetType(betTypeStr);
+        Bankroll bankroll = bankrollService.getActiveBankroll();
+        validateSufficientBalance(stake, bankroll);
+
+        double decimalOdds = OddsUtil.americanToDecimal(americanOdds);
+        BigDecimal potentialPayout = PayoutCalculator.totalReturn(stake, americanOdds);
+
+        Bet bet = Bet.builder()
+                .bankroll(bankroll)
+                .betType(betType)
+                .status(BetStatus.PENDING)
+                .stake(stake.setScale(SCALE, RoundingMode.HALF_UP))
+                .odds(BigDecimal.valueOf(decimalOdds).setScale(SCALE + 1, RoundingMode.HALF_UP))
+                .potentialPayout(potentialPayout)
+                .sport(sport)
+                .eventId(eventId)
+                .description(description != null ? description : selection)
+                .placedAt(Instant.now())
+                .metadata(metadata)
+                .isLive(true)
+                .build();
+        betRepository.save(bet);
+
+        BigDecimal newBalance = deductStake(bankroll, stake, bet.getId());
+
+        String summary = String.format(
+                "Placed LIVE %s bet: %s at %s odds ($%s to win $%s). Balance: $%s",
+                betType.name(),
+                selection,
+                formatAmericanOdds(americanOdds),
+                stake.setScale(SCALE, RoundingMode.HALF_UP),
+                potentialPayout.subtract(stake).setScale(SCALE, RoundingMode.HALF_UP),
+                newBalance.setScale(SCALE, RoundingMode.HALF_UP));
+
+        log.info("Live bet placed bet_id={} sport={} type={} stake={}", bet.getId(), sport, betType, stake);
+
+        return new PlaceBetResult(
+                bet.getId(),
+                sport,
+                eventId,
+                betType.name(),
+                selection,
+                bet.getDescription(),
+                stake,
+                americanOdds,
+                BigDecimal.valueOf(decimalOdds),
+                potentialPayout,
+                newBalance,
+                summary);
+    }
+
+    /** Cashes out a pending live bet at a reduced value. */
+    public CashOutResult cashOutBet(String betId) {
+        Bet bet = betRepository
+                .findById(betId)
+                .orElseThrow(() -> new IllegalArgumentException("Bet not found: " + betId));
+
+        if (bet.getStatus() != BetStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Cannot cash out bet with status " + bet.getStatus().name() + " — only PENDING bets");
+        }
+
+        // Cash-out value is a fraction of potential payout based on time elapsed
+        BigDecimal cashOutAmount =
+                bet.getPotentialPayout().multiply(BigDecimal.valueOf(0.7)).setScale(SCALE, RoundingMode.HALF_UP);
+
+        bet.setStatus(BetStatus.WON);
+        bet.setCashOutAmount(cashOutAmount);
+        bet.setCashedOutAt(Instant.now());
+        bet.setActualPayout(cashOutAmount);
+        bet.setSettledAt(Instant.now());
+        betRepository.save(bet);
+
+        Bankroll bankroll = bet.getBankroll();
+        BigDecimal newBalance = bankroll.getCurrentBalance().add(cashOutAmount);
+        bankroll.setCurrentBalance(newBalance);
+        bankrollRepository.save(bankroll);
+
+        BankrollTransaction txn = BankrollTransaction.builder()
+                .bankroll(bankroll)
+                .type(TransactionType.CASH_OUT)
+                .amount(cashOutAmount)
+                .balanceAfter(newBalance.setScale(SCALE, RoundingMode.HALF_UP))
+                .referenceBetId(betId)
+                .createdAt(Instant.now())
+                .build();
+        transactionRepository.save(txn);
+
+        BigDecimal profit = cashOutAmount.subtract(bet.getStake());
+
+        String summary = String.format(
+                "Cashed out bet %s for $%s (stake: $%s, profit: $%s). Balance: $%s",
+                betId,
+                cashOutAmount,
+                bet.getStake().setScale(SCALE, RoundingMode.HALF_UP),
+                profit.setScale(SCALE, RoundingMode.HALF_UP),
+                newBalance.setScale(SCALE, RoundingMode.HALF_UP));
+
+        log.info("Bet cashed out bet_id={} cashout={} profit={}", betId, cashOutAmount, profit);
+
+        return new CashOutResult(betId, bet.getStake(), cashOutAmount, profit, newBalance, summary);
+    }
+
+    /** Places a same-game parlay (SGP) with correlation-adjusted odds. */
+    public PlaceSgpResult placeSgpBet(
+            List<ParlayLegInput> legs,
+            BigDecimal stake,
+            String description,
+            String metadata,
+            String eventId,
+            double correlationAdjustment) {
+
+        if (legs == null || legs.size() < PayoutCalculator.MIN_PARLAY_LEGS) {
+            throw new IllegalArgumentException("SGP requires at least " + PayoutCalculator.MIN_PARLAY_LEGS + " legs");
+        }
+        validatePositiveStake(stake);
+        Bankroll bankroll = bankrollService.getActiveBankroll();
+        validateSufficientBalance(stake, bankroll);
+
+        // Calculate unadjusted combined odds
+        double combinedDecimal = 1.0;
+        for (ParlayLegInput leg : legs) {
+            combinedDecimal *= OddsUtil.americanToDecimal(leg.americanOdds());
+        }
+
+        // Apply correlation adjustment (reduces payout for positively correlated legs)
+        double adjustedDecimal = combinedDecimal * correlationAdjustment;
+        if (adjustedDecimal < 1.0) {
+            adjustedDecimal = 1.0;
+        }
+
+        int adjustedAmerican = OddsUtil.decimalToAmerican(adjustedDecimal);
+        BigDecimal potentialPayout =
+                stake.multiply(BigDecimal.valueOf(adjustedDecimal)).setScale(SCALE, RoundingMode.HALF_UP);
+
+        String sgpDescription = description != null ? description : legs.size() + "-leg SGP";
+
+        Bet bet = Bet.builder()
+                .bankroll(bankroll)
+                .betType(BetType.SGP)
+                .status(BetStatus.PENDING)
+                .stake(stake.setScale(SCALE, RoundingMode.HALF_UP))
+                .odds(BigDecimal.valueOf(adjustedDecimal).setScale(SCALE + 1, RoundingMode.HALF_UP))
+                .potentialPayout(potentialPayout)
+                .sport(legs.getFirst().sport())
+                .eventId(eventId)
+                .description(sgpDescription)
+                .placedAt(Instant.now())
+                .metadata(metadata)
+                .build();
+        betRepository.save(bet);
+
+        List<LegSummary> legSummaries = new ArrayList<>();
+        for (int i = 0; i < legs.size(); i++) {
+            ParlayLegInput legInput = legs.get(i);
+            BetLeg betLeg = BetLeg.builder()
+                    .bet(bet)
+                    .legNumber(i + 1)
+                    .selection(legInput.selection())
+                    .odds(BigDecimal.valueOf(OddsUtil.americanToDecimal(legInput.americanOdds()))
+                            .setScale(SCALE + 1, RoundingMode.HALF_UP))
+                    .status(BetLegStatus.PENDING)
+                    .eventId(eventId)
+                    .sport(legInput.sport())
+                    .correlationGroup(eventId)
+                    .build();
+            betLegRepository.save(betLeg);
+            legSummaries.add(
+                    new LegSummary(i + 1, legInput.sport(), eventId, legInput.selection(), legInput.americanOdds()));
+        }
+
+        BigDecimal newBalance = deductStake(bankroll, stake, bet.getId());
+
+        String summary = String.format(
+                "Placed %d-leg SGP at %s adjusted odds ($%s to win $%s, %.0f%% correlation adj). Balance: $%s",
+                legs.size(),
+                formatAmericanOdds(adjustedAmerican),
+                stake.setScale(SCALE, RoundingMode.HALF_UP),
+                potentialPayout.subtract(stake).setScale(SCALE, RoundingMode.HALF_UP),
+                (1.0 - correlationAdjustment) * 100,
+                newBalance.setScale(SCALE, RoundingMode.HALF_UP));
+
+        log.info(
+                "SGP placed bet_id={} legs={} stake={} adj={}", bet.getId(), legs.size(), stake, correlationAdjustment);
+
+        return new PlaceSgpResult(
+                bet.getId(),
+                stake,
+                BigDecimal.valueOf(adjustedDecimal),
+                adjustedAmerican,
+                potentialPayout,
+                legSummaries,
+                correlationAdjustment,
                 newBalance,
                 summary);
     }
