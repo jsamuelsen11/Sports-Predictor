@@ -16,46 +16,50 @@ class LayeredArchitectureTest {
     @ArchTest
     static final ArchRule toolsShouldOnlyDependOnServices = noClasses()
             .that()
-            .resideInAPackage("com.sportspredictor.tool..")
+            .resideInAPackage("com.sportspredictor.mcpserver.tool..")
             .should()
             .dependOnClassesThat()
             .resideInAnyPackage(
-                    "com.sportspredictor.repository..", "com.sportspredictor.client..", "com.sportspredictor.entity..")
+                    "com.sportspredictor.mcpserver.repository..",
+                    "com.sportspredictor.mcpserver.client..",
+                    "com.sportspredictor.mcpserver.entity..")
             .allowEmptyShould(true);
 
     /** Services must not depend on tools — data flows tool -> service, not the reverse. */
     @ArchTest
     static final ArchRule servicesShouldNotDependOnTools = noClasses()
             .that()
-            .resideInAPackage("com.sportspredictor.service..")
+            .resideInAPackage("com.sportspredictor.mcpserver.service..")
             .should()
             .dependOnClassesThat()
-            .resideInAPackage("com.sportspredictor.tool..")
+            .resideInAPackage("com.sportspredictor.mcpserver.tool..")
             .allowEmptyShould(true);
 
     /** Clients are self-contained — no dependencies on entities, services, tools, or repositories. */
     @ArchTest
     static final ArchRule clientsShouldBeSelfContained = noClasses()
             .that()
-            .resideInAPackage("com.sportspredictor.client..")
+            .resideInAPackage("com.sportspredictor.mcpserver.client..")
             .should()
             .dependOnClassesThat()
             .resideInAnyPackage(
-                    "com.sportspredictor.entity..",
-                    "com.sportspredictor.service..",
-                    "com.sportspredictor.tool..",
-                    "com.sportspredictor.repository..")
+                    "com.sportspredictor.mcpserver.entity..",
+                    "com.sportspredictor.mcpserver.service..",
+                    "com.sportspredictor.mcpserver.tool..",
+                    "com.sportspredictor.mcpserver.repository..")
             .allowEmptyShould(true);
 
     /** Resources depend only on services — same constraints as tools. */
     @ArchTest
     static final ArchRule resourcesShouldOnlyDependOnServices = noClasses()
             .that()
-            .resideInAPackage("com.sportspredictor.resource..")
+            .resideInAPackage("com.sportspredictor.mcpserver.resource..")
             .should()
             .dependOnClassesThat()
             .resideInAnyPackage(
-                    "com.sportspredictor.repository..", "com.sportspredictor.client..", "com.sportspredictor.entity..")
+                    "com.sportspredictor.mcpserver.repository..",
+                    "com.sportspredictor.mcpserver.client..",
+                    "com.sportspredictor.mcpserver.entity..")
             .allowEmptyShould(true);
 
     /** No circular dependencies between top-level packages. */
