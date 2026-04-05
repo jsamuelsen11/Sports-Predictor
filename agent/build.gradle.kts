@@ -16,7 +16,7 @@ dependencies {
     implementation(libs.spring.boot.starter.actuator)
 
     // Spring AI — Anthropic + MCP client
-    implementation(libs.spring.ai.anthropic)
+    implementation(libs.spring.ai.starter.model.anthropic)
     implementation(libs.spring.ai.starter.mcp.client)
 
     // Environment
