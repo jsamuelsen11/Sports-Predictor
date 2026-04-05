@@ -1,0 +1,42 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: sports-predictor-agent
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      chat:
+        options:
+          model: claude-sonnet-4-20250514
+          max-tokens: 8192
+    mcp:
+      client:
+        enabled: true
+        name: sports-agent
+        version: 1.0.0
+        type: SYNC
+        request-timeout: 60s
+        sse:
+          connections:
+            sports-server:
+              url: http://localhost:8080
+
+agent:
+  strategy: moderate
+  sports:
+    - nba
+    - nfl
+    - mlb
+    - nhl
+  schedule:
+    settle-cron: "0 0 8 * * *"
+    scan-cron: "0 0 10 * * *"
+    report-cron: "0 0 22 * * *"
+
+logging:
+  level:
+    root: INFO
+    com.sportspredictor.agent: INFO
+    org.springframework.ai: INFO
