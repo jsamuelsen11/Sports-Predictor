@@ -14,3 +14,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "sports-predictor"
+
+include("server", "agent")
