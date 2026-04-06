@@ -26,14 +26,14 @@ public class ToolObservationAspect {
                 .lowCardinalityKeyValue("mcp.tool.name", toolName)
                 .lowCardinalityKeyValue("mcp.tool.class", toolClass);
 
-        return observation.observe(() -> {
-            try {
-                return joinPoint.proceed();
-            } catch (RuntimeException | Error e) {
-                throw e;
-            } catch (Throwable t) {
-                throw new RuntimeException(t);
-            }
-        });
+        observation.start();
+        try {
+            return joinPoint.proceed();
+        } catch (Throwable t) {
+            observation.error(t);
+            throw t;
+        } finally {
+            observation.stop();
+        }
     }
 }

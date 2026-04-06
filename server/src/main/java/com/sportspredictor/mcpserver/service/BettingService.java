@@ -14,8 +14,6 @@ import com.sportspredictor.mcpserver.repository.BetLegRepository;
 import com.sportspredictor.mcpserver.repository.BetRepository;
 import com.sportspredictor.mcpserver.util.OddsUtil;
 import com.sportspredictor.mcpserver.util.PayoutCalculator;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -182,15 +180,10 @@ public class BettingService {
                 .build();
         betRepository.save(bet);
         log.info("Bet placed bet_id={} sport={} type={} stake={}", bet.getId(), sport, betType, stake);
-        Counter.builder("bets.placed")
-                .tag("sport", sport)
-                .tag("bet_type", betType.name())
-                .register(meterRegistry)
+        meterRegistry
+                .counter("bets.placed", "sport", sport, "bet_type", betType.name())
                 .increment();
-        DistributionSummary.builder("bets.stake")
-                .tag("sport", sport)
-                .register(meterRegistry)
-                .record(stake.doubleValue());
+        meterRegistry.summary("bets.stake", "sport", sport).record(stake.doubleValue());
 
         BigDecimal newBalance = deductStake(bankroll, stake, bet.getId());
         String summary = String.format(

@@ -4,7 +4,6 @@ import com.sportspredictor.mcpserver.entity.PredictionLog;
 import com.sportspredictor.mcpserver.entity.enums.PredictionType;
 import com.sportspredictor.mcpserver.repository.PredictionLogRepository;
 import com.sportspredictor.mcpserver.util.OddsUtil;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -126,10 +125,8 @@ public class PredictionService {
             // 8. Log prediction
             String predictionId =
                     logPrediction(eventId, sport, predictionType, predictedOutcome, confidence, keyFactors);
-            Counter.builder("predictions.generated")
-                    .tag("sport", sport)
-                    .tag("prediction_type", predictionType)
-                    .register(meterRegistry)
+            meterRegistry
+                    .counter("predictions.generated", "sport", sport, "prediction_type", predictionType)
                     .increment();
 
             String summary = String.format(
