@@ -14,6 +14,9 @@ import com.sportspredictor.mcpserver.repository.BetLegRepository;
 import com.sportspredictor.mcpserver.repository.BetRepository;
 import com.sportspredictor.mcpserver.util.OddsUtil;
 import com.sportspredictor.mcpserver.util.PayoutCalculator;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -40,6 +43,7 @@ public class BettingService {
     private final BankrollService bankrollService;
     private final BankrollRepository bankrollRepository;
     private final BankrollTransactionRepository transactionRepository;
+    private final MeterRegistry meterRegistry;
 
     /** Result of placing a single bet. */
     public record PlaceBetResult(
@@ -177,9 +181,18 @@ public class BettingService {
                 .metadata(metadata)
                 .build();
         betRepository.save(bet);
+        log.info("Bet placed bet_id={} sport={} type={} stake={}", bet.getId(), sport, betType, stake);
+        Counter.builder("bets.placed")
+                .tag("sport", sport)
+                .tag("bet_type", betType.name())
+                .register(meterRegistry)
+                .increment();
+        DistributionSummary.builder("bets.stake")
+                .tag("sport", sport)
+                .register(meterRegistry)
+                .record(stake.doubleValue());
 
         BigDecimal newBalance = deductStake(bankroll, stake, bet.getId());
-
         String summary = String.format(
                 "Placed %s bet: %s at %s odds ($%s to win $%s). Balance: $%s",
                 betType.name(),
@@ -188,8 +201,6 @@ public class BettingService {
                 stake.setScale(SCALE, RoundingMode.HALF_UP),
                 potentialPayout.subtract(stake).setScale(SCALE, RoundingMode.HALF_UP),
                 newBalance.setScale(SCALE, RoundingMode.HALF_UP));
-
-        log.info("Bet placed bet_id={} sport={} type={} stake={}", bet.getId(), sport, betType, stake);
 
         return new PlaceBetResult(
                 bet.getId(),

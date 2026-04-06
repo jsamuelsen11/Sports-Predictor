@@ -18,6 +18,8 @@ import com.sportspredictor.mcpserver.service.BettingService.CancelBetResult;
 import com.sportspredictor.mcpserver.service.BettingService.ParlayLegInput;
 import com.sportspredictor.mcpserver.service.BettingService.PlaceBetResult;
 import com.sportspredictor.mcpserver.service.BettingService.PlaceParlayResult;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /** Tests for {@link BettingService}. */
@@ -47,6 +50,9 @@ class BettingServiceTest {
 
     @Mock
     private BankrollTransactionRepository transactionRepository;
+
+    @Spy
+    private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     @InjectMocks
     private BettingService bettingService;

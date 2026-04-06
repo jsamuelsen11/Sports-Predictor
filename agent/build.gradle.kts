@@ -19,6 +19,13 @@ dependencies {
     implementation(libs.spring.ai.starter.model.anthropic)
     implementation(libs.spring.ai.starter.mcp.client)
 
+    // OpenTelemetry
+    implementation(libs.micrometer.tracing.bridge.otel)
+    implementation(libs.opentelemetry.exporter.otlp)
+    implementation(libs.micrometer.registry.otlp)
+    runtimeOnly(libs.opentelemetry.logback.appender)
+    implementation(libs.spring.boot.starter.aop)
+
     // Environment
     implementation(libs.spring.dotenv)
 
