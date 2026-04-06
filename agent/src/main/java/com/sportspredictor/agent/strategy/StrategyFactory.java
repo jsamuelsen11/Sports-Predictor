@@ -9,10 +9,8 @@ public class StrategyFactory {
 
     @Bean
     public BettingStrategy bettingStrategy(AgentProperties properties) {
-        return switch (properties.getStrategy().toLowerCase()) {
-            case "conservative" -> new ConservativeStrategy();
-            case "aggressive" -> new AggressiveStrategy();
-            default -> new ModerateStrategy();
-        };
+        String name = properties.getStrategy().substring(0, 1).toUpperCase()
+                + properties.getStrategy().substring(1).toLowerCase();
+        return BettingStrategy.from(name, properties.getActiveStrategyParams());
     }
 }

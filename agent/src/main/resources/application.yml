@@ -9,7 +9,7 @@ spring:
       api-key: ${ANTHROPIC_API_KEY:}
       chat:
         options:
-          model: claude-sonnet-4-20250514
+          model: ${ANTHROPIC_MODEL:claude-sonnet-4-20250514}
           max-tokens: 8192
     mcp:
       client:
@@ -34,6 +34,31 @@ agent:
     settle-cron: "0 0 8 * * *"
     scan-cron: "0 0 10 * * *"
     report-cron: "0 0 22 * * *"
+  strategies:
+    conservative:
+      min-confidence: 0.70
+      min-edge-pct: 5.0
+      kelly-fraction: quarter
+      max-bets-per-day: 2
+      max-stake-pct: 1.0
+      allowed-bet-types: MONEYLINE,SPREAD
+      max-parlay-legs: 0
+    moderate:
+      min-confidence: 0.60
+      min-edge-pct: 3.0
+      kelly-fraction: half
+      max-bets-per-day: 5
+      max-stake-pct: 2.0
+      allowed-bet-types: MONEYLINE,SPREAD,TOTAL,PARLAY
+      max-parlay-legs: 3
+    aggressive:
+      min-confidence: 0.50
+      min-edge-pct: 1.5
+      kelly-fraction: full
+      max-bets-per-day: 10
+      max-stake-pct: 5.0
+      allowed-bet-types: MONEYLINE,SPREAD,TOTAL,PARLAY,TEASER,PLAYER_PROP,FUTURES,SGP
+      max-parlay-legs: 6
 
 logging:
   level:

@@ -25,7 +25,8 @@ public class DailyCycleWorkflow {
         log.info("=== DAILY CYCLE: Settlement Phase ===");
         try {
             String result = settlementWorkflow.execute();
-            log.info("Settlement result:\n{}", result);
+            log.info("Settlement complete, response length={} chars", result != null ? result.length() : 0);
+            log.debug("Settlement result:\n{}", result);
         } catch (Exception e) {
             log.error("Settlement workflow failed", e);
         }
@@ -36,10 +37,13 @@ public class DailyCycleWorkflow {
         log.info("=== DAILY CYCLE: Scan & Bet Phase ===");
         try {
             String candidates = scanWorkflow.execute();
-            log.info("Scan candidates:\n{}", candidates);
+            log.info("Scan complete, candidates length={} chars", candidates != null ? candidates.length() : 0);
+            log.debug("Scan candidates:\n{}", candidates);
 
             String betResult = analyzeAndBetWorkflow.execute(candidates);
-            log.info("Bet placement result:\n{}", betResult);
+            log.info(
+                    "Bet placement complete, result length={} chars", betResult != null ? betResult.length() : 0);
+            log.debug("Bet placement result:\n{}", betResult);
         } catch (Exception e) {
             log.error("Scan and bet workflow failed", e);
         }
@@ -50,7 +54,8 @@ public class DailyCycleWorkflow {
         log.info("=== DAILY CYCLE: Report Phase ===");
         try {
             String report = reportWorkflow.execute();
-            log.info("Daily report:\n{}", report);
+            log.info("Daily report complete, length={} chars", report != null ? report.length() : 0);
+            log.debug("Daily report:\n{}", report);
         } catch (Exception e) {
             log.error("Report workflow failed", e);
         }
