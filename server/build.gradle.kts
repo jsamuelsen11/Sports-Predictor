@@ -39,6 +39,13 @@ dependencies {
     // Caching
     implementation(libs.caffeine)
 
+    // OpenTelemetry
+    implementation(libs.micrometer.tracing.bridge.otel)
+    implementation(libs.opentelemetry.exporter.otlp)
+    implementation(libs.micrometer.registry.otlp)
+    runtimeOnly(libs.opentelemetry.logback.appender)
+    implementation(libs.spring.boot.starter.aop)
+
     // Resilience
     implementation(libs.resilience4j.spring.boot3)
     implementation(libs.resilience4j.ratelimiter)

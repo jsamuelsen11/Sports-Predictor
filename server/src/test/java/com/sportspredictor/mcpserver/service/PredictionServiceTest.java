@@ -21,12 +21,15 @@ import com.sportspredictor.mcpserver.service.StatsService.TeamStatsResult;
 import com.sportspredictor.mcpserver.service.TrendService.RecordTrend;
 import com.sportspredictor.mcpserver.service.TrendService.TrendResult;
 import com.sportspredictor.mcpserver.service.WeatherService.WeatherResult;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /** Tests for {@link PredictionService}. */
@@ -50,6 +53,9 @@ class PredictionServiceTest {
 
     @Mock
     private PredictionLogRepository predictionLogRepository;
+
+    @Spy
+    private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     @InjectMocks
     private PredictionService predictionService;

@@ -11,6 +11,10 @@ spring:
         options:
           model: ${ANTHROPIC_MODEL:claude-sonnet-4-20250514}
           max-tokens: 8192
+    chat:
+      observations:
+        include-input: true
+        include-output: true
     mcp:
       client:
         enabled: true
@@ -59,6 +63,33 @@ agent:
       max-stake-pct: 5.0
       allowed-bet-types: MONEYLINE,SPREAD,TOTAL,PARLAY,TEASER,PLAYER_PROP,FUTURES,SGP
       max-parlay-legs: 6
+
+management:
+  tracing:
+    enabled: ${OTEL_TRACING_ENABLED:true}
+    sampling:
+      probability: ${OTEL_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+    metrics:
+      export:
+        enabled: ${OTEL_METRICS_ENABLED:true}
+        url: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
+        step: ${OTEL_METRICS_STEP:30s}
+    logging:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/logs
+  opentelemetry:
+    resource-attributes:
+      "service.name": sports-predictor-agent
+      "service.version": 0.1.0
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: sports-predictor-agent
 
 logging:
   level:

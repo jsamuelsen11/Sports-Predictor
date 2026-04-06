@@ -7,6 +7,8 @@ error-prone-plugin = "5.1.0"
 hibernate-community-dialects = "6.6.11.Final"
 jacoco = "0.8.14"
 lombok = "1.18.38"
+micrometer-tracing = "1.5.2"
+opentelemetry-instrumentation = "2.15.0-alpha"
 resilience4j = "2.3.0"
 spotbugs-plugin = "6.4.8"
 spotless = "8.4.0"
@@ -64,4 +66,14 @@ error-prone-core = { module = "com.google.errorprone:error_prone_core", version.
 # Test
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+# OpenTelemetry / Tracing
+micrometer-registry-otlp = { module = "io.micrometer:micrometer-registry-otlp" }
+micrometer-tracing-bridge-otel = { module = "io.micrometer:micrometer-tracing-bridge-otel" }
+opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp" }
+opentelemetry-logback-appender = { module = "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0", version.ref = "opentelemetry-instrumentation" }
+
+# AOP
+spring-boot-starter-aop = { module = "org.springframework.boot:spring-boot-starter-aop" }
+
+# Test
 wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
