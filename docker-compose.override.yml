@@ -1,0 +1,7 @@
+# Automatically loaded by "docker compose up".
+# Includes the observability stack (Jaeger, Prometheus, Grafana, Loki).
+# To run without observability:
+#   docker compose -f docker-compose.yml up
+
+include:
+  - docker-compose.observability.yml

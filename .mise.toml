@@ -70,3 +70,41 @@ run = "./gradlew clean"
 [tasks.check]
 depends = ["format:check", "lint", "test", "coverage"]
 description = "Full quality gate"
+
+# Docker
+[tasks."docker:up"]
+description = "Start server + agent (no observability)"
+run = "docker compose -f docker-compose.yml up -d"
+
+[tasks."docker:up:full"]
+description = "Start server + agent + observability stack"
+run = "docker compose up -d"
+
+[tasks."docker:down"]
+description = "Stop all containers"
+run = "docker compose down"
+
+[tasks."docker:build"]
+description = "Build Docker images"
+run = "docker compose build"
+
+[tasks."docker:logs"]
+description = "Tail container logs"
+run = "docker compose logs -f"
+
+# Agent workflows
+[tasks."agent:settle"]
+description = "Trigger settlement workflow"
+run = "curl -s -X POST http://localhost:8081/api/workflows/settle | python3 -m json.tool"
+
+[tasks."agent:scan"]
+description = "Trigger scan & bet workflow"
+run = "curl -s -X POST http://localhost:8081/api/workflows/scan-and-bet | python3 -m json.tool"
+
+[tasks."agent:report"]
+description = "Trigger daily report workflow"
+run = "curl -s -X POST http://localhost:8081/api/workflows/report | python3 -m json.tool"
+
+[tasks."agent:cycle"]
+description = "Run full daily cycle (settle → scan → report)"
+run = "curl -s -X POST http://localhost:8081/api/workflows/full-cycle | python3 -m json.tool"

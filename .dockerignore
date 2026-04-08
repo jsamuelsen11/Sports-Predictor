@@ -1,0 +1,48 @@
+# Build outputs
+**/build/
+**/bin/
+**/.gradle/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# Data (mounted at runtime, not baked into image)
+data/
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker (avoid recursive context)
+docker-compose*.yml
+.dockerignore
+Dockerfile
+
+# Docs
+docs/
+*.md
+LICENSE
+
+# Observability config (not needed in app images)
+observability/
+otel-collector-config.yml
+
+# Environment files (secrets)
+.env
+.env.example
+
+# Project tooling
+.beads/
+.serena/
+.claude/
+.mise.toml
+lefthook.yml
