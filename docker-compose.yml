@@ -32,7 +32,7 @@ services:
     env_file:
       - .env
     environment:
-      JAVA_TOOL_OPTIONS: -Dspring.ai.mcp.client.sse.connections.sports-server.url=http://server:8080
+      JAVA_TOOL_OPTIONS: -Dspring.ai.mcp.client.sse.connections.sports-server.url=${MCP_SERVER_URL:-http://server:8080}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
     depends_on:
       server:
